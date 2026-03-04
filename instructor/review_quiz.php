@@ -34,6 +34,9 @@ $total_questions = mysqli_num_rows($questions_res);
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
         body { font-family: 'Poppins', sans-serif; background: #f8fafc; color: #1e293b; }
         
@@ -135,7 +138,7 @@ $total_questions = mysqli_num_rows($questions_res);
                     $opt_res = mysqli_query($conn, "SELECT * FROM quiz_options WHERE question_id = $q_id");
                 ?>
                 
-                <div class="card q-card mb-4 animate__animated animate__fadeInUp">
+                <div class="card q-card mb-4 animate__animated animate__fadeInUp" id="q-card-<?= $q_id ?>">
                     <div class="q-header d-flex justify-content-between align-items-center p-3 border-bottom">
                         <div class="d-flex align-items-center gap-2">
                             <span class="badge bg-primary rounded-pill px-3">Question <?= $q_num++ ?></span>
@@ -145,11 +148,10 @@ $total_questions = mysqli_num_rows($questions_res);
                             <a href="edit_question.php?id=<?= $q_id ?>" class="action-btn btn-edit text-decoration-none" title="Edit">
                                 <i class="fas fa-pen"></i>
                             </a>
-                            <a href="delete_question.php?id=<?= $q_id ?>&quiz_id=<?= $quiz_id ?>" 
-                            class="action-btn btn-delete text-decoration-none" 
-                                onclick="return confirm('Are you sure you want to delete this question?')" title="Delete">
+                            <button type="button" class="action-btn btn-delete" 
+                                    onclick="confirmDelete(<?= $q_id ?>, 'q-card-<?= $q_id ?>')" title="Delete">
                                 <i class="fas fa-trash"></i>
-                            </a>
+                            </button>
                         </div>
                     </div>
 
@@ -197,7 +199,72 @@ $total_questions = mysqli_num_rows($questions_res);
         </div>
     </div>
 </div>
+<script>
+function confirmDelete(qId, cardId) {
+    Swal.fire({
+        title: 'Delete Question?',
+        text: "You want to remove this question!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Yes, Delete it!',
+        showClass: { popup: 'animate__animated animate__zoomIn' },
+        hideClass: { popup: 'animate__animated animate__zoomOut' }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            
+            // ૧. કાર્ડને એનિમેશન સાથે છુપાવો
+            $(`#${cardId}`).addClass('animate__animated animate__fadeOutRight');
+            setTimeout(() => { $(`#${cardId}`).hide(); }, 500);
+            
+            // ૨. UNDO માટે ટોસ્ટ
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'bottom-start',
+                showConfirmButton: true,
+                confirmButtonText: 'UNDO',
+                timer: 5000,
+                timerProgressBar: true
+            });
 
+            Toast.fire({
+                icon: 'success',
+                title: 'Question deleted'
+            }).then((undoResult) => {
+                if (undoResult.isConfirmed) {
+                    // UNDO લોજિક
+                    $(`#${cardId}`).show().removeClass('animate__animated animate__fadeOutRight').addClass('animate__animated animate__fadeInLeft');
+                } else {
+                    deleteFromDatabase(qId, cardId);
+                }
+            });
+        }
+    });
+}
+function deleteFromDatabase(qId, cardId) {
+    $.ajax({
+        url: 'delete_question_ajax.php',
+        type: 'POST',
+        data: { id: qId },
+        success: function(response) {
+            // ડેટાબેઝમાંથી ડિલીટ થયા પછી DOM માંથી કાર્ડને કાયમ માટે કાઢી નાખો
+            $(`#${cardId}`).remove();
+            
+            // જો પ્રશ્નોના નંબર (Q1, Q2) અપડેટ કરવા હોય તો:
+            updateQuestionNumbers();
+        }
+    });
+}
+
+// પ્રશ્નોના નંબર ફરીથી સેટ કરવાનું ફંક્શન
+function updateQuestionNumbers() {
+    let count = 1;
+    $('.q-card:visible').each(function() {
+        $(this).find('.badge.bg-primary').text('Question ' + count++);
+    });
+}
+</script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
