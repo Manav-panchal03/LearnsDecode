@@ -100,6 +100,7 @@ $p_img = ($profile_data && !empty($profile_data['profile_pic']) && $profile_data
         <a href="manage_courses.php"><i class="fas fa-book-open"></i> My Courses</a>
         <a href="add_course.php"><i class="fas fa-plus-square"></i> Create Course</a>
         <a href="add_quiz.php"><i class="fas fa-question-circle"></i> Quizzes</a>
+        <a href="manage_quizzes.php"><i class="fas fa-tasks"></i> Manage Quizzes</a>
         <hr style="border-color: rgba(255,255,255,0.1)">
         <a href="../logout.php" class="text-danger"><i class="fas fa-power-off"></i> Logout</a>
     </div>

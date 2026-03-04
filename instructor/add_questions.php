@@ -37,6 +37,11 @@ if (isset($_POST['save_question'])) {
         }
         $success = true;
     }
+
+    // અત્યાર સુધી કેટલા પ્રશ્નો એડ થયા છે તે ગણવા માટે
+$count_query = mysqli_query($conn, "SELECT COUNT(*) as total FROM quiz_questions WHERE quiz_id = $quiz_id");
+$count_data = mysqli_fetch_assoc($count_query);
+$next_q_number = $count_data['total'] + 1; // આવનાર પ્રશ્નનો નંબર
 }
 ?>
 
@@ -125,7 +130,7 @@ if (isset($_POST['save_question'])) {
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Marks</label>
-                            <input type="number" name="marks" class="form-control" value="1" required>
+                            <input type="number" min="0" name="marks" class="form-control" value="1" required>
                         </div>
                         <div class="col-md-3">
                             <button type="submit" name="save_question" class="btn-add w-100">

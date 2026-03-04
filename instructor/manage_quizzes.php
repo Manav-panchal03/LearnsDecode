@@ -12,12 +12,14 @@ if(isset($_GET['publish_id'])){
 }
 
 // Fetch Quizzes with question count
-$sql = "SELECT q.*, c.title as course_title, 
+$sql = "SELECT q.*, c.title as course_title, c.thumbnail as course_image, 
         (SELECT COUNT(*) FROM quiz_questions WHERE quiz_id = q.id) as total_ques 
         FROM quizzes q 
         JOIN courses c ON q.course_id = c.id 
-        WHERE c.instructor_id = $instructor_id ORDER BY q.id DESC";
+        WHERE c.instructor_id = $instructor_id 
+        ORDER BY q.id DESC";
 $result = mysqli_query($conn, $sql);
+
 ?>
 
 <!DOCTYPE html>
@@ -49,8 +51,14 @@ $result = mysqli_query($conn, $sql);
         <?php while($row = mysqli_fetch_assoc($result)): ?>
             <div class="col-12 quiz-row p-3 mb-2 d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="bg-light p-3 rounded-3 text-primary">
-                        <i class="fas fa-question-circle fa-lg"></i>
+                    <div class="quiz-icon">
+                        <?php if(!empty($row['course_image'])): ?>
+                            <img src="../uploads/thumbnails/<?= $row['course_image'] ?>" alt="Quiz Icon" style="width: 50px; height: 50px; border-radius: 10px; object-fit: cover;">
+                        <?php else: ?>
+                            <div class="default-icon bg-light d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; border-radius: 10px;">
+                                <i class="fas fa-brain text-primary"></i>
+                            </div>
+                        <?php endif; ?>
                     </div>
                     <div>
                         <h6 class="fw-bold mb-0"><?= $row['title'] ?></h6>
@@ -64,7 +72,7 @@ $result = mysqli_query($conn, $sql);
                     </span>
 
                     <div class="actions">
-                        <a href="add_questions.php?quiz_id=<?= $row['id'] ?>" class="btn btn-sm btn-light border" title="Edit Questions"><i class="fas fa-list"></i></a>
+                        <a href="review_quiz.php?quiz_id=<?= $row['id'] ?>" class="btn btn-sm btn-light border" title="Edit Questions"><i class="fas fa-list"></i></a>
                         
                         <?php if($row['status'] == 'draft'): ?>
                             <a href="manage_quizzes.php?publish_id=<?= $row['id'] ?>" class="btn btn-sm btn-success ms-2 px-3" onclick="return confirm('Publish this quiz for students?')">
