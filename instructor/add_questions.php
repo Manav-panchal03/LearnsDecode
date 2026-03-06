@@ -8,41 +8,55 @@ if(!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'instructor'){
     exit();
 }
 
-$quiz_id = isset($_GET['quiz_id']) ? $_GET['quiz_id'] : null;
+// Quiz ID મેળવો અને સુરક્ષિત કરો
+$quiz_id = isset($_GET['quiz_id']) ? intval($_GET['quiz_id']) : null;
 
 if (!$quiz_id) {
-    header("Location: add_quiz.php");
+    header("Location: manage_quizzes.php");
     exit();
 }
 
-// ક્વિઝનું ટાઇટલ ફેચ કરવા માટે (ડિસ્પ્લે હેતુ)
+// ક્વિઝનું ટાઇટલ ફેચ કરવા માટે
 $quiz_info = mysqli_query($conn, "SELECT title FROM quizzes WHERE id = $quiz_id");
 $quiz_data = mysqli_fetch_assoc($quiz_info);
 
-if (isset($_POST['save_question'])) {
-    $question_text = mysqli_real_escape_string($conn, $_POST['question_text']);
-    $marks = $_POST['marks'];
+// પ્રશ્ન સેવ કરવાનું લોજિક
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && (isset($_POST['save_question']) || isset($_POST['finish_quiz']))) {
     
-    // 1. quiz_questions માં ઇન્સર્ટ
-    $q_query = "INSERT INTO quiz_questions (quiz_id, question_text, marks) VALUES ('$quiz_id', '$question_text', '$marks')";
+    $question_text = mysqli_real_escape_string($conn, $_POST['question_text']);
+    $marks = intval($_POST['marks']);
+    $correct_opt_idx = intval($_POST['correct_opt']); // ૧ થી ૪ વચ્ચેની વેલ્યુ
+
+    // ૧. પહેલા quiz_questions માં ઇન્સર્ટ કરો
+    $q_query = "INSERT INTO quiz_questions (quiz_id, question_text, marks) VALUES ($quiz_id, '$question_text', $marks)";
     
     if (mysqli_query($conn, $q_query)) {
-        $question_id = mysqli_insert_id($conn);
-        
-        // 2. quiz_options માં 4 ઓપ્શન્સ ઇન્સર્ટ
+        // ૨. આ જ પ્રશ્નનું તાજું ID મેળવો
+        $new_question_id = mysqli_insert_id($conn); 
+
+        // ૩. ચારેય ઓપ્શન્સને લૂપ ફેરવીને ઇન્સર્ટ કરો
         for ($i = 1; $i <= 4; $i++) {
-            $opt_text = mysqli_real_escape_string($conn, $_POST["opt$i"]);
-            $is_correct = ($_POST['correct_opt'] == $i) ? 1 : 0;
-            mysqli_query($conn, "INSERT INTO quiz_options (question_id, option_text, is_correct) VALUES ('$question_id', '$opt_text', '$is_correct')");
+            $opt_field = "opt" . $i;
+            $option_text = mysqli_real_escape_string($conn, $_POST[$opt_field]);
+            $is_correct = ($i === $correct_opt_idx) ? 1 : 0;
+
+            $opt_query = "INSERT INTO quiz_options (question_id, option_text, is_correct) 
+                          VALUES ($new_question_id, '$option_text', $is_correct)";
+            mysqli_query($conn, $opt_query);
+        }
+
+        // જો યુઝરે 'Finish' બટન દબાવ્યું હોય
+        if (isset($_POST['finish_quiz'])) {
+            header("Location: manage_quizzes.php?msg=quiz_updated");
+            exit();
         }
         $success = true;
     }
+}
 
-    // અત્યાર સુધી કેટલા પ્રશ્નો એડ થયા છે તે ગણવા માટે
+// પ્રશ્નોની ગણતરી માટે
 $count_query = mysqli_query($conn, "SELECT COUNT(*) as total FROM quiz_questions WHERE quiz_id = $quiz_id");
 $count_data = mysqli_fetch_assoc($count_query);
-$next_q_number = $count_data['total'] + 1; // આવનાર પ્રશ્નનો નંબર
-}
 ?>
 
 <!DOCTYPE html>
@@ -61,11 +75,12 @@ $next_q_number = $count_data['total'] + 1; // આવનાર પ્રશ્ન
         .question-card { border: none; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); background: #fff; }
         .form-label { font-weight: 600; font-size: 0.9rem; color: #444; }
         .option-input { border-left: 4px solid #e1e1e1; transition: 0.3s; }
-        .option-input:focus { border-left: 4px solid var(--primary-color); }
+        .option-input:focus { border-left: 4px solid var(--primary-color); box-shadow: none; }
         .correct-select { background-color: #f8fff9; border: 1px solid var(--success-color); }
         .btn-add { background: var(--primary-color); border: none; border-radius: 10px; padding: 12px; font-weight: 600; color: white; transition: 0.3s; }
         .btn-add:hover { background: #5a52e0; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(108, 99, 255, 0.3); }
         .btn-finish { border-radius: 10px; padding: 12px; font-weight: 600; }
+        .badge-count { background: #eef2ff; color: var(--primary-color); border: 1px solid #e0e7ff; }
     </style>
 </head>
 <body>
@@ -76,8 +91,8 @@ $next_q_number = $count_data['total'] + 1; // આવનાર પ્રશ્ન
             
             <div class="d-flex justify-content-between align-items-center mb-4 animate__animated animate__fadeIn">
                 <div>
-                    <h4 class="fw-bold mb-0">Quiz: <span class="text-primary"><?= $quiz_data['title'] ?></span></h4>
-                    <small class="text-muted">Adding questions to Quiz ID #<?= $quiz_id ?></small>
+                    <h4 class="fw-bold mb-0">Quiz: <span class="text-primary"><?= htmlspecialchars($quiz_data['title']) ?></span></h4>
+                    <span class="badge badge-count rounded-pill px-3 mt-2">Questions Added: <?= $count_data['total'] ?></span>
                 </div>
                 <a href="review_quiz.php?quiz_id=<?= $quiz_id ?>" 
                     class="btn btn-outline-primary btn-sm rounded-pill px-4 animate__animated animate__fadeInRight" 
@@ -102,19 +117,19 @@ $next_q_number = $count_data['total'] + 1; // આવનાર પ્રશ્ન
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
                             <label class="form-label text-muted small">Option 1</label>
-                            <input type="text" name="opt1" class="form-control option-input" placeholder="Option 1" required>
+                            <input type="text" name="opt1" class="form-control option-input" placeholder="Enter option 1" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label text-muted small">Option 2</label>
-                            <input type="text" name="opt2" class="form-control option-input" placeholder="Option 2" required>
+                            <input type="text" name="opt2" class="form-control option-input" placeholder="Enter option 2" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label text-muted small">Option 3</label>
-                            <input type="text" name="opt3" class="form-control option-input" placeholder="Option 3" required>
+                            <input type="text" name="opt3" class="form-control option-input" placeholder="Enter option 3" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label text-muted small">Option 4</label>
-                            <input type="text" name="opt4" class="form-control option-input" placeholder="Option 4" required>
+                            <input type="text" name="opt4" class="form-control option-input" placeholder="Enter option 4" required>
                         </div>
                     </div>
 
@@ -128,26 +143,26 @@ $next_q_number = $count_data['total'] + 1; // આવનાર પ્રશ્ન
                                 <option value="4">Option 4</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label class="form-label">Marks</label>
-                            <input type="number" min="0" name="marks" class="form-control" value="1" required>
+                            <input type="number" min="1" name="marks" class="form-control" value="1" required>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <button type="submit" name="save_question" class="btn-add w-100">
                                 <i class="fas fa-plus me-2"></i>Add Next
                             </button>
                         </div>
                     </div>
-                </form>
 
-                <hr class="my-4" style="opacity: 0.1;">
-                
-                <div class="text-center">
-                    <p class="small text-muted mb-3">Done adding questions?</p>
-                    <a href="manage_quizzes.php" class="btn btn-dark btn-finish px-5">
-                        <i class="fas fa-check-double me-2"></i>Finish & Save Quiz
-                    </a>
-                </div>
+                    <hr class="my-4" style="opacity: 0.1;">
+                    
+                    <div class="text-center">
+                        <p class="small text-muted mb-3">Done adding questions?</p>
+                        <button type="submit" name="finish_quiz" class="btn btn-dark btn-finish px-5 shadow-sm">
+                            <i class="fas fa-check-double me-2"></i>Finish & Save Quiz
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

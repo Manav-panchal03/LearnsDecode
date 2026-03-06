@@ -16,7 +16,7 @@
 
             <div class="col-md-4 col-lg-3 col-xl-3 mx-auto mt-3">
                 <h5 class="text-uppercase mb-4 font-weight-bold text-primary">Contact</h5>
-                <p><i class="fas fa-home mr-3"></i> Surat, Gujarat, India</p>
+                <p><i class="fas fa-home mr-3"></i> Bilimora, Gujarat, India</p>
                 <p><i class="fas fa-envelope mr-3"></i> support@learnsdecode.com</p>
                 <p><i class="fas fa-phone mr-3"></i> +91 98765 43210</p>
             </div>

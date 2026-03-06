@@ -1,7 +1,11 @@
 <!--Aa file ma apne Navbar banavishu 
 jema Login thaya pachi "My Dashboard" dekhase ane Login pehla "Login/Register".
 -->
-<?php session_start(); ?>
+<?php 
+if (session_status() === PHP_SESSION_NONE) {
+    session_start(); 
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
