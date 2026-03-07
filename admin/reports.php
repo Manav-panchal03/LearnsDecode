@@ -53,10 +53,11 @@ $stats['recent'] = [
 ];
 ?>
 
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2>Reports & Analytics</h2>
-                <a href="dashboard.php" class="btn btn-secondary">Back to Dashboard</a>
-            </div>
+<div class="container-fluid p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Reports & Analytics</h2>
+        <a href="dashboard.php" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
 
             <!-- User Statistics -->
             <div class="card mb-4">

@@ -26,7 +26,7 @@ $total_reviews = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as coun
 
 <style>
     /* dashboard-specific components */
-    .stat-card { border: none; border-radius: 15px; padding: 25px; background: #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.05); transition: 0.3s; height: 100%; }
+    .stat-card { border: none; border-radius: 15px; padding: 25px; background: #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.05); border-bottom: 4px solid var(--primary-color); }
     .stat-card:hover { transform: translateY(-5px); box-shadow: 0 12px 25px rgba(0,0,0,0.1); }
     .stat-card .card-body { display: flex; align-items: center; justify-content: space-between; }
     .stat-card h3 { font-size: 2.5rem; font-weight: 700; margin-bottom: 5px; }
@@ -47,70 +47,50 @@ $total_reviews = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as coun
     .welcome-header h2 { margin-bottom: 5px; font-weight: 700; }
     .welcome-header small { opacity: 0.9; font-size: 1rem; }
     .badge { font-size: 0.75rem; padding: 6px 12px; border-radius: 50px; font-weight: 600; }
+    /* course card styles */
+    .course-card { background: white; border-radius: 20px; overflow: hidden; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: 0.3s; }
+    .course-card:hover { transform: translateY(-5px); box-shadow: 0 12px 20px rgba(0,0,0,0.1); }
+    .thumb-container { height: 150px; position: relative; }
+    .thumb-container img { width: 100%; height: 100%; object-fit: cover; }
+    .status-badge { position: absolute; top: 10px; right: 10px; font-size: 0.7rem; padding: 5px 12px; border-radius: 50px; font-weight: 700; }
+    .bg-draft { background: #fff4e5; color: #ff9800; }
+    .bg-published { background: #e6fffa; color: #38b2ac; }
 </style>
 
 <!-- main content begins -->
-<div class="welcome-header">
-        <h2>Welcome back, <?php echo htmlspecialchars($admin['name']); ?>! 👋</h2>
-        <small>Administrator Dashboard • <?php echo date('l, F j, Y'); ?></small>
+<div class="container-fluid p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold">Administrator Dashboard</h2>
     </div>
 
     <!-- Statistics Cards -->
     <div class="row g-4 mb-4">
         <div class="col-md-3">
             <div class="stat-card">
-                <div class="card-body">
-                    <div>
-                        <h5 class="card-title text-primary">Total Users</h5>
-                        <h3><?php echo $total_users; ?></h3>
-                    </div>
-                    <div class="stat-icon bg-primary-gradient">
-                        <i class="fas fa-users"></i>
-                    </div>
-                </div>
+                <h6 class="text-muted small text-uppercase">Total Users</h6>
+                <h2 class="fw-bold mb-0"><?php echo $total_users; ?></h2>
             </div>
         </div>
 
         <div class="col-md-3">
-            <div class="stat-card">
-                <div class="card-body">
-                    <div>
-                        <h5 class="card-title text-success">Students</h5>
-                        <h3><?php echo $total_students; ?></h3>
-                    </div>
-                    <div class="stat-icon bg-success-gradient">
-                        <i class="fas fa-graduation-cap"></i>
-                    </div>
-                </div>
+            <div class="stat-card" style="border-color: #2ed573;">
+                <h6 class="text-muted small text-uppercase">Students</h6>
+                <h2 class="fw-bold mb-0"><?php echo $total_students; ?></h2>
             </div>
         </div>
 
         <div class="col-md-3">
-            <div class="stat-card">
-                <div class="card-body">
-                    <div>
-                        <h5 class="card-title text-warning">Instructors</h5>
-                        <h3><?php echo $total_instructors; ?></h3>
-                    </div>
-                    <div class="stat-icon bg-warning-gradient">
-                        <i class="fas fa-chalkboard-teacher"></i>
-                    </div>
-                </div>
+            <div class="stat-card" style="border-color: #ffa726;">
+                <h6 class="text-muted small text-uppercase">Instructors</h6>
+                <h2 class="fw-bold mb-0"><?php echo $total_instructors; ?></h2>
             </div>
         </div>
 
         <div class="col-md-3">
-            <div class="stat-card">
-                <div class="card-body">
-                    <div>
-                        <h5 class="card-title text-info">Pending Instructors</h5>
-                        <h3><?php echo $pending_instructors; ?></h3>
-                        <small class="text-muted">Need approval</small>
-                    </div>
-                    <div class="stat-icon bg-info-gradient">
-                        <i class="fas fa-user-clock"></i>
-                    </div>
-                </div>
+            <div class="stat-card" style="border-color: #3742fa;">
+                <h6 class="text-muted small text-uppercase">Pending Instructors</h6>
+                <h2 class="fw-bold mb-0"><?php echo $pending_instructors; ?></h2>
+                <small class="text-muted">Need approval</small>
             </div>
         </div>
     </div>
@@ -119,59 +99,77 @@ $total_reviews = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as coun
     <div class="row g-4 mb-4">
         <div class="col-md-4">
             <div class="stat-card">
-                <div class="card-body">
-                    <div>
-                        <h5 class="card-title text-primary">Total Courses</h5>
-                        <h3><?php echo $total_courses; ?></h3>
-                        <div class="mt-2">
-                            <small class="text-success"><?php echo $published_courses; ?> published</small> |
-                            <small class="text-warning"><?php echo $draft_courses; ?> draft</small>
-                        </div>
-                    </div>
-                    <div class="stat-icon bg-primary-gradient">
-                        <i class="fas fa-book"></i>
-                    </div>
+                <h6 class="text-muted small text-uppercase">Total Courses</h6>
+                <h2 class="fw-bold mb-0"><?php echo $total_courses; ?></h2>
+                <div class="mt-2">
+                    <small class="text-success"><?php echo $published_courses; ?> published</small> |
+                    <small class="text-warning"><?php echo $draft_courses; ?> draft</small>
                 </div>
             </div>
         </div>
 
         <div class="col-md-4">
-            <div class="stat-card">
-                <div class="card-body">
-                    <div>
-                        <h5 class="card-title text-success">Enrollments</h5>
-                        <h3><?php echo $total_enrollments; ?></h3>
-                        <div class="mt-2">
-                            <small class="text-primary"><?php echo $active_enrollments; ?> active</small>
-                        </div>
-                    </div>
-                    <div class="stat-icon bg-success-gradient">
-                        <i class="fas fa-user-plus"></i>
-                    </div>
+            <div class="stat-card" style="border-color: #2ed573;">
+                <h6 class="text-muted small text-uppercase">Enrollments</h6>
+                <h2 class="fw-bold mb-0"><?php echo $total_enrollments; ?></h2>
+                <div class="mt-2">
+                    <small class="text-primary"><?php echo $active_enrollments; ?> active</small>
                 </div>
             </div>
         </div>
 
         <div class="col-md-4">
-            <div class="stat-card">
-                <div class="card-body">
-                    <div>
-                        <h5 class="card-title text-info">Quizzes & Reviews</h5>
-                        <h3><?php echo $total_quizzes; ?></h3>
-                        <div class="mt-2">
-                            <small class="text-warning"><?php echo $total_reviews; ?> reviews</small>
-                        </div>
-                    </div>
-                    <div class="stat-icon bg-info-gradient">
-                        <i class="fas fa-question-circle"></i>
-                    </div>
+            <div class="stat-card" style="border-color: #3742fa;">
+                <h6 class="text-muted small text-uppercase">Quizzes & Reviews</h6>
+                <h2 class="fw-bold mb-0"><?php echo $total_quizzes; ?></h2>
+                <div class="mt-2">
+                    <small class="text-warning"><?php echo $total_reviews; ?> reviews</small>
                 </div>
             </div>
         </div>
     </div>
 
+    <h4 class="fw-bold mb-4">Recent Courses</h4>
+    <div class="row g-4">
+        <?php
+        $recent_courses = mysqli_query($conn, "SELECT c.*, u.name as instructor_name FROM courses c JOIN users u ON c.instructor_id = u.id ORDER BY c.created_at DESC LIMIT 6");
+        if(mysqli_num_rows($recent_courses) > 0){
+            while($course = mysqli_fetch_assoc($recent_courses)){
+                $imgName = (!empty($course['thumbnail'])) ? $course['thumbnail'] : 'course-default.jpg';
+                $imgPath = "../uploads/thumbnails/" . $imgName;
+                $status = $course['status'];
+                $badgeClass = ($status == 'published' || $status == 'active') ? 'bg-published' : 'bg-draft';
+                $statusText = ($status == 'published' || $status == 'active') ? 'Published' : 'Draft';
+        ?>
+        <div class="col-md-4">
+            <div class="course-card">
+                <div class="thumb-container">
+                    <img src="<?= $imgPath ?>" class="img-fluid" alt="Course Thumbnail" onerror="this.src='../uploads/thumbnails/course-default.jpg'">
+                    <span class="status-badge <?= $badgeClass ?>"><?= strtoupper($statusText) ?></span>
+                </div>
+                <div class="p-3">
+                    <h6 class="fw-bold text-truncate mb-1"><?= htmlspecialchars($course['title']) ?></h6>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <p class="text-muted small mb-0">by <?= htmlspecialchars($course['instructor_name']) ?></p>
+                        <a href="manage_courses.php" class="text-primary small text-decoration-none">Manage <i class="fas fa-arrow-right ms-1" style="font-size: 10px;"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php
+            }
+        } else {
+        ?>
+        <div class="col-12 text-center py-5 bg-white rounded-4 shadow-sm">
+            <i class="fas fa-book-open fa-3x text-muted mb-3"></i>
+            <h5>No courses found.</h5>
+            <p class="text-muted">Courses will appear here once instructors start creating them.</p>
+        </div>
+        <?php } ?>
+    </div>
+
     <!-- Recent Activity -->
-    <div class="row">
+    <div class="row mt-5">
         <div class="col-md-6">
             <div class="activity-card">
                 <div class="card-header bg-light">
@@ -210,9 +208,9 @@ $total_reviews = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as coun
                 </div>
                 <div class="card-body p-0">
                     <?php
-                    $recent_courses = mysqli_query($conn, "SELECT c.*, u.name as instructor_name FROM courses c JOIN users u ON c.instructor_id = u.id ORDER BY c.created_at DESC LIMIT 5");
-                    if(mysqli_num_rows($recent_courses) > 0){
-                        while($course = mysqli_fetch_assoc($recent_courses)){
+                    $recent_courses_list = mysqli_query($conn, "SELECT c.*, u.name as instructor_name FROM courses c JOIN users u ON c.instructor_id = u.id ORDER BY c.created_at DESC LIMIT 5");
+                    if(mysqli_num_rows($recent_courses_list) > 0){
+                        while($course = mysqli_fetch_assoc($recent_courses_list)){
                             $status_class = $course['status'] == 'published' ? 'success' : 'warning';
                             $status_text = ucfirst($course['status']);
                             echo '<div class="activity-item d-flex align-items-center">';
