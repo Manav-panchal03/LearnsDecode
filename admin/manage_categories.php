@@ -25,12 +25,13 @@ $categories_query = "SELECT c.*, COUNT(co.id) as course_count FROM categories c 
 $categories_result = mysqli_query($conn, $categories_query);
 ?>
 
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2><i class="fas fa-tags me-2"></i>Manage Categories</h2>
-                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
-                    <i class="fas fa-plus me-2"></i>Add Category
-                </button>
-            </div>
+<div class="container-fluid p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-tags me-2"></i>Manage Categories</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+            <i class="fas fa-plus me-2"></i>Add Category
+        </button>
+    </div>
 
             <?php if(isset($message)): ?>
                 <div class="alert alert-success alert-dismissible fade show" role="alert">

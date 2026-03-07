@@ -29,10 +29,11 @@ $courses_query = "SELECT c.*, u.name as instructor_name, cat.name as category_na
 $courses_result = mysqli_query($conn, $courses_query);
 ?>
 
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2><i class="fas fa-book me-2"></i>Manage Courses</h2>
-                <a href="dashboard.php" class="btn btn-secondary">Back to Dashboard</a>
-            </div>
+<div class="container-fluid p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-book me-2"></i>Manage Courses</h2>
+        <a href="dashboard.php" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
 
             <?php if(isset($message)): ?>
                 <div class="alert alert-success alert-dismissible fade show" role="alert">

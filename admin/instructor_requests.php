@@ -39,10 +39,11 @@ $requests_query = "SELECT ir.*, u.name, u.email, reviewer.name as reviewer_name
 $requests_result = mysqli_query($conn, $requests_query);
 ?>
 
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2>Instructor Approval Requests</h2>
-                <a href="dashboard.php" class="btn btn-secondary">Back to Dashboard</a>
-            </div>
+<div class="container-fluid p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Instructor Approval Requests</h2>
+        <a href="dashboard.php" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
 
             <?php if(isset($message)): ?>
                 <div class="alert alert-success alert-dismissible fade show" role="alert">

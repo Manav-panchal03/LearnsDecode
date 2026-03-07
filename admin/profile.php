@@ -28,7 +28,7 @@ $admin = mysqli_fetch_assoc(mysqli_query($conn, "SELECT name,email FROM users WH
 
 <?php include 'includes/header.php'; ?>
 
-<div class="container-fluid">
+<div class="container-fluid p-4">
     <div class="row justify-content-center">
         <div class="col-md-6">
             <div class="card shadow">

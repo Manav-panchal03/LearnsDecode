@@ -18,6 +18,8 @@ if(!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin'){
 
 // determine active page for sidebar highlighting
 $activePage = basename($_SERVER['PHP_SELF']);
+$admin_name = $_SESSION['user_name'];
+$admin_email = $_SESSION['user_email'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -30,25 +32,24 @@ $activePage = basename($_SERVER['PHP_SELF']);
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --sidebar-width: 240px;
+            --sidebar-width: 280px;
             --primary-color: #6c63ff;
             --dark-bg: #1e1e2d;
         }
 
-        body { font-family: 'Poppins', sans-serif; background-color: #f4f7f6; overflow-x: hidden; overflow-y: scroll; }
+        body { font-family: 'Poppins', sans-serif; background-color: #f4f7f6; overflow-x: hidden; }
 
         /* --- SIDEBAR & CONTENT --- */
-        #sidebar { width: var(--sidebar-width); height: calc(100vh - 80px); position: fixed; left: 0; top: 80px; background: #f4f7f6; color: #333; transition: all 0.3s ease-in-out; z-index: 2000; box-shadow: 2px 0 5px rgba(0,0,0,0.05); border-right: 1px solid #e9ecef; }
+        #sidebar { width: var(--sidebar-width); height: 100vh; position: fixed; left: 0; top: 0; background: var(--dark-bg); color: #a2a3b7; transition: all 0.3s ease-in-out; z-index: 1000; box-shadow: 4px 0 10px rgba(0,0,0,0.1); }
         #sidebar.active { left: calc(-1 * var(--sidebar-width)); }
-        .sidebar-header { padding: 30px 20px; text-align: center; background: #ffffff; border-bottom: 1px solid #e9ecef; color: #495057; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .nav-links { padding: 20px 0; background: #ffffff; margin: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .nav-links a { padding: 12px 25px; display: flex; align-items: center; color: #495057; text-decoration: none; transition: 0.2s; border-left: 4px solid transparent; border-radius: 0 4px 4px 0; margin: 2px 0; }
-        .nav-links a i { width: 30px; font-size: 1.1rem; color: #6c757d; }
-        .nav-links a:hover, .nav-links a.active { background: #f8f9fa; color: #007bff; border-left: 4px solid #007bff; }
-        #content { width: calc(100% - var(--sidebar-width)); margin-left: var(--sidebar-width); transition: all 0.3s ease-in-out; min-height: 100vh; padding: 30px; padding-top: 80px; }
+        .sidebar-header { padding: 30px 20px; text-align: center; background: rgba(0,0,0,0.2); }
+        .nav-links { padding: 20px 0; }
+        .nav-links a { padding: 12px 25px; display: flex; align-items: center; color: #a2a3b7; text-decoration: none; transition: 0.2s; border-left: 4px solid transparent; }
+        .nav-links a i { width: 30px; font-size: 1.1rem; }
+        .nav-links a:hover, .nav-links a.active { background: #2b2b40; color: #ffffff; border-left: 4px solid var(--primary-color); }
+        #content { width: calc(100% - var(--sidebar-width)); margin-left: var(--sidebar-width); transition: all 0.3s ease-in-out; min-height: 100vh; }
         #content.active { width: 100%; margin-left: 0; }
         .navbar-custom { background: #ffffff; padding: 15px 30px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .table-3d { box-shadow: 0 4px 8px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; }
         #sidebarCollapse { background: var(--primary-color); border: none; color: white; padding: 5px 12px; border-radius: 5px; }
     </style>
 </head>
@@ -57,64 +58,43 @@ $activePage = basename($_SERVER['PHP_SELF']);
 <!-- <nav class="navbar navbar-custom d-flex justify-content-between">
     <button id="sidebarCollapse" class="btn btn-outline-secondary btn-sm me-2"><i class="fas fa-bars"></i></button>
     <a class="navbar-brand fw-bold text-primary" href="<?= defined('BASE_URL') ? BASE_URL : '' ?>/admin/dashboard.php">LearnsDecode Admin</a>
-    <div class="d-flex gap-2 align-items-center">
-        <a class="btn btn-outline-secondary btn-sm" href="<?= defined('BASE_URL') ? BASE_URL : '' ?>/admin/profile.php"><i class="fas fa-user-circle me-1"></i>Profile</a>
-        <a class="btn btn-outline-danger btn-sm" href="<?= defined('BASE_URL') ? BASE_URL : '' ?>/logout.php" onclick="return confirm('Are you sure you want to logout?')"><i class="fas fa-sign-out-alt me-1"></i>Logout</a>
+    <div class="user-info d-flex align-items-center">
+        <div class="text-end me-3 d-none d-sm-block">
+            <div class="fw-bold lh-1"><?= $admin_name; ?></div>
+            <small class="text-muted" style="font-size: 11px;">Administrator</small>
+        </div>
+        <img src="https://ui-avatars.com/api/?name=<?= urlencode($admin_name) ?>&background=6c63ff&color=fff" class="rounded-circle shadow-sm border" width="45" height="45" style="object-fit: cover;">
     </div>
 </nav> -->
 
-<nav class="navbar navbar-custom d-flex justify-content-between">
-
-    <div class="d-flex align-items-center">
-        <button id="sidebarCollapse" class="btn btn-outline-secondary btn-sm me-2">
-            <i class="fas fa-bars"></i>
-        </button>
-
-        <a class="navbar-brand fw-bold text-primary mb-0"
-           href="<?= defined('BASE_URL') ? BASE_URL : '' ?>/admin/dashboard.php">
-           LearnsDecode Admin
-        </a>
-    </div>
-
-    <div class="d-flex gap-2 align-items-center">
-        <a class="btn btn-outline-secondary btn-sm"
-           href="<?= defined('BASE_URL') ? BASE_URL : '' ?>/admin/profile.php">
-           <i class="fas fa-user-circle me-1"></i>Profile
-        </a>
-
-        <a class="btn btn-outline-danger btn-sm"
-           href="<?= defined('BASE_URL') ? BASE_URL : '' ?>/logout.php"
-           onclick="return confirm('Are you sure you want to logout?')">
-           <i class="fas fa-sign-out-alt me-1"></i>Logout
-        </a>
-    </div>
-
-</nav>
-
-<div id="sidebar">
+<nav id="sidebar">
     <div class="sidebar-header">
-        <h5>Admin Panel</h5>
+        <h3 class="fw-bold text-white mb-0">Learns<span style="color:var(--primary-color)">Decode</span></h3>
+        <small>Admin Panel</small>
     </div>
     <div class="nav-links">
-        <a href="dashboard.php" class="<?= $activePage == 'dashboard.php' ? 'active' : '' ?>">
-            <i class="fas fa-tachometer-alt"></i> Dashboard
-        </a>
-        <a href="manage_users.php" class="<?= $activePage == 'manage_users.php' ? 'active' : '' ?>">
-            <i class="fas fa-users"></i> Manage Users
-        </a>
-        <a href="manage_courses.php" class="<?= $activePage == 'manage_courses.php' ? 'active' : '' ?>">
-            <i class="fas fa-book"></i> Manage Courses
-        </a>
-        <a href="instructor_requests.php" class="<?= $activePage == 'instructor_requests.php' ? 'active' : '' ?>">
-            <i class="fas fa-user-check"></i> Instructor Requests
-        </a>
-        <a href="manage_categories.php" class="<?= $activePage == 'manage_categories.php' ? 'active' : '' ?>">
-            <i class="fas fa-tags"></i> Categories
-        </a>
-        <a href="reports.php" class="<?= $activePage == 'reports.php' ? 'active' : '' ?>">
-            <i class="fas fa-chart-bar"></i> Reports
-        </a>
+        <a href="dashboard.php" class="<?= basename($_SERVER['PHP_SELF']) == 'dashboard.php' ? 'active' : '' ?>"><i class="fas fa-th-large"></i> Dashboard</a>
+        <a href="manage_users.php" class="<?= basename($_SERVER['PHP_SELF']) == 'manage_users.php' ? 'active' : '' ?>"><i class="fas fa-users"></i> Manage Users</a>
+        <a href="manage_courses.php" class="<?= basename($_SERVER['PHP_SELF']) == 'manage_courses.php' ? 'active' : '' ?>"><i class="fas fa-book-open"></i> Manage Courses</a>
+        <a href="instructor_requests.php" class="<?= basename($_SERVER['PHP_SELF']) == 'instructor_requests.php' ? 'active' : '' ?>"><i class="fas fa-user-check"></i> Instructor Requests</a>
+        <a href="manage_categories.php" class="<?= basename($_SERVER['PHP_SELF']) == 'manage_categories.php' ? 'active' : '' ?>"><i class="fas fa-tags"></i> Categories</a>
+        <a href="reports.php" class="<?= basename($_SERVER['PHP_SELF']) == 'reports.php' ? 'active' : '' ?>"><i class="fas fa-chart-bar"></i> Reports</a>
+        <hr style="border-color: rgba(255,255,255,0.1)">
+        <a href="profile.php" class="<?= basename($_SERVER['PHP_SELF']) == 'profile.php' ? 'active' : '' ?>"><i class="fas fa-user-circle"></i> Profile</a>
+        <a href="<?= defined('BASE_URL') ? BASE_URL : '' ?>/logout.php" class="text-danger" onclick="return confirm('Are you sure you want to logout?')"><i class="fas fa-power-off"></i> Logout</a>
     </div>
-</div>
+</nav>
 
 <div id="content">
+    <nav class="navbar navbar-custom d-flex justify-content-between">
+        <button type="button" id="sidebarCollapse">
+            <i class="fas fa-align-left"></i>
+        </button>
+        <div class="user-info d-flex align-items-center">
+            <div class="text-end me-3 d-none d-sm-block">
+                <div class="fw-bold lh-1"><?= $admin_name; ?></div>
+                <small class="text-muted" style="font-size: 11px;">Administrator</small>
+            </div>
+            <img src="https://ui-avatars.com/api/?name=<?= urlencode($admin_name) ?>&background=6c63ff&color=fff" class="rounded-circle shadow-sm border" width="45" height="45" style="object-fit: cover;">
+        </div>
+    </nav>
