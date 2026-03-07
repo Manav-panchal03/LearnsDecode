@@ -1,6 +1,13 @@
 <?php
 session_start();
 require '../config/config.php';
+require_once '../includes/session_utils.php';
+activateRole('instructor');
+
+// security check
+if(!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'instructor'){
+    header("Location: ../login.php"); exit();
+}
 
 $course_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 

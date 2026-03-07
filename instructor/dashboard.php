@@ -1,6 +1,10 @@
 <?php
 session_start();
 require '../config/config.php';
+require_once '../includes/session_utils.php';
+
+// activate instructor role (keeps other roles intact)
+activateRole('instructor');
 
 // Security Check
 if(!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'instructor'){
@@ -100,7 +104,7 @@ $p_img = ($profile_data && !empty($profile_data['profile_pic']) && $profile_data
         <a href="add_quiz.php"><i class="fas fa-question-circle"></i>Create Quizzes</a>
         <a href="manage_quizzes.php"><i class="fas fa-tasks"></i> Manage Quizzes</a>
         <hr style="border-color: rgba(255,255,255,0.1)">
-        <a href="../logout.php" class="text-danger"><i class="fas fa-power-off"></i> Logout</a>
+        <a href="<?= defined('BASE_URL') ? BASE_URL : '' ?>/logout.php" class="text-danger"><i class="fas fa-power-off"></i> Logout</a>
     </div>
 </nav>
 

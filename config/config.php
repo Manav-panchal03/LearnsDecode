@@ -1,5 +1,11 @@
 <?php
 
+// base URL used for generating absolute links; adjust if the project lives under a different path
+// note: spaces must be URL-encoded by the browser automatically, so you can keep them here
+if(!defined('BASE_URL')){
+    define('BASE_URL', '/Learns Decode/LearnsDecode');
+}
+
 $severname = "localhost";
 $username = "root";
 $password = "";
