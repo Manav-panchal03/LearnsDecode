@@ -2,102 +2,56 @@
 
 require 'config/config.php';
 
+// Add approved column to users table for admin approval system
+$alter_users = "ALTER TABLE users ADD COLUMN approved TINYINT(1) DEFAULT 1";
+$result_alter = mysqli_query($conn, $alter_users);
+if ($result_alter) {
+    echo "Column 'approved' added to users table successfully.<br>";
+} else {
+    echo "Error adding column or column already exists: " . mysqli_error($conn) . "<br>";
+}
 
-// $users = "CREATE TABLE users (
-//     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-//     name VARCHAR(100) NOT NULL,
-//     email VARCHAR(100) NOT NULL UNIQUE,
-//     password VARCHAR(255) NOT NULL,
-//     role ENUM('student','instructor','admin') NOT NULL DEFAULT 'student',
-//     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-// ) ENGINE=InnoDB;";
+// Set default approved status for existing users
+$update_existing = "UPDATE users SET approved = 1 WHERE role != 'admin' OR role IS NULL";
+$result_update = mysqli_query($conn, $update_existing);
+if ($result_update) {
+    echo "Existing non-admin users approved by default.<br>";
+} else {
+    echo "Error updating existing users: " . mysqli_error($conn) . "<br>";
+}
 
-// $resultUSER = mysqli_query($conn, $users);
-// if ($resultUSER) {
-//     echo "Table 'users' created successfully.<br>";
-// } else {
-//     echo "Error creating table 'users': " . mysqli_error($conn) . "<br>";
-// }
+// Set admin users to not approved by default (they need approval)
+$update_admins = "UPDATE users SET approved = 0 WHERE role = 'admin'";
+$result_admins = mysqli_query($conn, $update_admins);
+if ($result_admins) {
+    echo "Admin users set to pending approval.<br>";
+} else {
+    echo "Error updating admin users: " . mysqli_error($conn) . "<br>";
+}
 
-// $courses="CREATE TABLE courses (
-//     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-//     instructor_id INT UNSIGNED NOT NULL,
-//     title VARCHAR(150) NOT NULL,
-//     description TEXT,
-//     status ENUM('draft','published') DEFAULT 'draft',
-//     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-//     FOREIGN KEY (instructor_id) REFERENCES users(id)
-// ) ENGINE=InnoDB;";
+// Create admin_requests table for tracking approval requests
+$admin_requests = "CREATE TABLE IF NOT EXISTS admin_requests (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id INT UNSIGNED NOT NULL,
+    request_reason TEXT,
+    status ENUM('pending','approved','rejected') DEFAULT 'pending',
+    requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    reviewed_at TIMESTAMP NULL,
+    reviewed_by INT UNSIGNED NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (reviewed_by) REFERENCES users(id)
+) ENGINE=InnoDB;";
 
-// $resultCOURSE = mysqli_query($conn, $courses);
-// if ($resultCOURSE) {
-//     echo "Table 'courses' created successfully.<br>";
-// } else {
-//     echo "Error creating table 'courses': " . mysqli_error($conn) . "<br>";
-// }
+$result_requests = mysqli_query($conn, $admin_requests);
+if ($result_requests) {
+    echo "Table 'admin_requests' created successfully.<br>";
+} else {
+    echo "Error creating table 'admin_requests': " . mysqli_error($conn) . "<br>";
+}
 
-// $lessons="CREATE TABLE lessons (
-//     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-//     course_id INT UNSIGNED NOT NULL,
-//     title VARCHAR(150) NOT NULL,
-//     content TEXT,
-//     position INT UNSIGNED DEFAULT 1,
-//     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-//     FOREIGN KEY (course_id) REFERENCES courses(id)
-// ) ENGINE=InnoDB;";
+echo "<br>Database setup complete!";
 
-// $resultLESSON = mysqli_query($conn, $lessons);
-// if ($resultLESSON) {
-//     echo "Table 'lessons' created successfully.<br>";
-// } else {
-//     echo "Error creating table 'lessons': " . mysqli_error($conn) . "<br>";
-// }
-
-// $quizzes="CREATE TABLE quizzes (
-//     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-//     course_id INT UNSIGNED NOT NULL,
-//     title VARCHAR(150) NOT NULL,
-//     total_marks INT UNSIGNED DEFAULT 0,
-//     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-//     FOREIGN KEY (course_id) REFERENCES courses(id)
-// ) ENGINE=InnoDB;";
-
-// $resultQUIZ = mysqli_query($conn, $quizzes);
-// if ($resultQUIZ) {
-//     echo "Table 'quizzes' created successfully.<br>";
-// } else {
-//     echo "Error creating table 'quizzes': " . mysqli_error($conn) . "<br>";
-// }
-
-// $quiz_questions="CREATE TABLE quiz_questions (
-//     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-//     quiz_id INT UNSIGNED NOT NULL,
-//     question_text TEXT NOT NULL,
-//     marks INT UNSIGNED DEFAULT 1,
-//     FOREIGN KEY (quiz_id) REFERENCES quizzes(id)
-// ) ENGINE=InnoDB;";
-
-// $resultQUESTION = mysqli_query($conn, $quiz_questions);
-// if ($resultQUESTION) {
-//     echo "Table 'quiz_questions' created successfully.<br>";
-// } else {
-//     echo "Error creating table 'quiz_questions': " . mysqli_error($conn) . "<br>";
-// }
-
-// $quiz_options="CREATE TABLE quiz_options (
-//     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-//     question_id INT UNSIGNED NOT NULL,
-//     option_text TEXT NOT NULL,
-//     is_correct TINYINT(1) DEFAULT 0,
-//     FOREIGN KEY (question_id) REFERENCES quiz_questions(id)
-// ) ENGINE=InnoDB;";
-
-// $resultOPTION = mysqli_query($conn, $quiz_options);
-// if ($resultOPTION) {
-//     echo "Table 'quiz_options' created successfully.<br>";
-// } else {
-//     echo "Error creating table 'quiz_options': " . mysqli_error($conn) . "<br>";
-// }
+?>
 
 // $enrollments="CREATE TABLE enrollments (
 //     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

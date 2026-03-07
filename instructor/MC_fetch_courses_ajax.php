@@ -1,6 +1,16 @@
 <?php
 session_start();
 require '../config/config.php';
+require_once '../includes/session_utils.php';
+
+// activate instructor role
+activateRole('instructor');
+
+// security check
+if(!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'instructor'){
+    http_response_code(403);
+    exit();
+}
 
 $uid = $_SESSION['user_id'];
 $search = isset($_POST['search']) ? mysqli_real_escape_string($conn, $_POST['search']) : '';
