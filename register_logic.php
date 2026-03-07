@@ -30,11 +30,31 @@ if(isset($_POST['register'])){
     if(mysqli_num_rows($result) > 0){
         echo "<script>alert('Email already exists!'); window.location='register.php';</script>";
     } else {
-        $query = "INSERT INTO users (name, email, password, role) VALUES ('$name', '$email', '$password', '$role')";
-        if(mysqli_query($conn, $query)){
-            echo "<script>alert('Registration Successful!'); window.location='login.php';</script>";
+        // Handle instructor registration differently
+        if($role == 'instructor'){
+            $approved = 0; // Instructor needs approval
+            $query = "INSERT INTO users (name, email, password, role, approved) VALUES ('$name', '$email', '$password', '$role', '$approved')";
+            
+            if(mysqli_query($conn, $query)){
+                $user_id = mysqli_insert_id($conn);
+                
+                // Create instructor request record
+                $request_reason = isset($_POST['request_reason']) ? mysqli_real_escape_string($conn, $_POST['request_reason']) : 'Instructor access requested';
+                $request_query = "INSERT INTO instructor_requests (user_id, request_reason) VALUES ('$user_id', '$request_reason')";
+                mysqli_query($conn, $request_query);
+                
+                echo "<script>alert('Instructor registration request submitted! Please wait for approval from administrators.'); window.location='login.php';</script>";
+            } else {
+                echo "Error: " . mysqli_error($conn);
+            }
         } else {
-            echo "Error: " . mysqli_error($conn);
+            $approved = 1; // Students are approved by default
+            $query = "INSERT INTO users (name, email, password, role, approved) VALUES ('$name', '$email', '$password', '$role', '$approved')";
+            if(mysqli_query($conn, $query)){
+                echo "<script>alert('Registration Successful!'); window.location='login.php';</script>";
+            } else {
+                echo "Error: " . mysqli_error($conn);
+            }
         }
     }
 }
