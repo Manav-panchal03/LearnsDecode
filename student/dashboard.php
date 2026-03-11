@@ -113,6 +113,7 @@ $current_progress = $resume_course ? getCourseProgress($conn, $enrollment_id, $r
         </a>
         <a class="nav-link" href="profile.php"><i class="fas fa-user-circle me-2"></i> Profile</a>
         <a class="nav-link" href="my_quizzes.php"><i class="fas fa-question-circle me-2"></i> My Quizzes</a>
+        <a class="nav-link" href="../index.php"><i class="fas fa-arrow-left me-2"></i> Back to Home </a>
     </nav>
     <div class="p-3 border-top">
         <div class="d-flex align-items-center">
