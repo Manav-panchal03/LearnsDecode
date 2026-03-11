@@ -30,7 +30,7 @@ $stats['enrollments'] = [
     'completed' => mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as count FROM enrollments WHERE status='completed'"))['count']
 ];
 
-// Quiz and review statistics
+// Engagement statistics
 $stats['engagement'] = [
     'quizzes' => mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as count FROM quizzes"))['count'],
     'quiz_attempts' => mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as count FROM quiz_attempts"))['count'],
@@ -38,11 +38,9 @@ $stats['engagement'] = [
     'avg_rating' => mysqli_fetch_assoc(mysqli_query($conn, "SELECT AVG(rating) as avg FROM reviews"))['avg']
 ];
 
-// Revenue statistics (if applicable)
+// Potential Revenue (Corrected logic)
 $stats['revenue'] = [
-    'potential' => mysqli_fetch_assoc(mysqli_query($conn, "SELECT SUM(c.price * e.enrollment_count) as total
-                                                           FROM courses c
-                                                           CROSS JOIN (SELECT COUNT(*) as enrollment_count FROM enrollments) e"))['total'] ?? 0
+    'potential' => mysqli_fetch_assoc(mysqli_query($conn, "SELECT SUM(c.price) as total FROM courses c JOIN enrollments e ON c.id = e.course_id"))['total'] ?? 0
 ];
 
 // Recent activity (last 30 days)
@@ -53,207 +51,246 @@ $stats['recent'] = [
 ];
 ?>
 
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+    .analytics-card {
+        border: none;
+        border-radius: 15px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        background: #fff;
+    }
+    .analytics-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        font-size: 1.5rem;
+    }
+    .progress-thin { height: 6px; }
+    .table-3d tr { transition: all 0.2s; }
+    .table-3d tr:hover { background-color: #f8f9fa; transform: scale(1.01); }
+</style>
+
 <div class="container-fluid p-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Reports & Analytics</h2>
-        <a href="dashboard.php" class="btn btn-secondary">Back to Dashboard</a>
+    <div class="d-flex justify-content-between align-items-center mb-4 animate__animated animate__fadeInDown">
+        <div>
+            <h2 class="fw-bold text-dark"><i class="fas fa-chart-line me-2 text-primary"></i>Reports & Analytics</h2>
+            <p class="text-muted">Detailed insight into your platform's growth</p>
+        </div>
+        <a href="dashboard.php" class="btn btn-outline-secondary rounded-pill px-4 shadow-sm">
+            <i class="fas fa-chevron-left me-2"></i>Dashboard
+        </a>
     </div>
 
-            <!-- User Statistics -->
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-users me-2"></i>User Statistics</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-md-2">
-                            <h3 class="text-primary"><?php echo $stats['users']['total']; ?></h3>
-                            <p class="mb-0">Total Users</p>
-                        </div>
-                        <div class="col-md-2">
-                            <h3 class="text-success"><?php echo $stats['users']['students']; ?></h3>
-                            <p class="mb-0">Students</p>
-                        </div>
-                        <div class="col-md-2">
-                            <h3 class="text-warning"><?php echo $stats['users']['instructors']; ?></h3>
-                            <p class="mb-0">Instructors</p>
-                        </div>
-                        <div class="col-md-2">
-                            <h3 class="text-info"><?php echo $stats['users']['admins']; ?></h3>
-                            <p class="mb-0">Admins</p>
-                        </div>
-                        <div class="col-md-2">
-                            <h3 class="text-danger"><?php echo $stats['users']['pending_admins']; ?></h3>
-                            <p class="mb-0">Pending Admins</p>
-                        </div>
-                        <div class="col-md-2">
-                            <h3 class="text-secondary"><?php echo $stats['users']['active_users']; ?></h3>
-                            <p class="mb-0">Active Users</p>
-                        </div>
+    <div class="row mb-4 g-3">
+        <div class="col-md-3 animate__animated animate__zoomIn" style="animation-delay: 0.1s;">
+            <div class="card analytics-card p-3 shadow-sm">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon bg-primary text-white me-3"><i class="fas fa-users"></i></div>
+                    <div>
+                        <h4 class="mb-0 fw-bold"><?php echo $stats['users']['total']; ?></h4>
+                        <small class="text-muted">Total Users</small>
                     </div>
                 </div>
             </div>
-
-            <!-- Course Statistics -->
-            <div class="card mb-4">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0"><i class="fas fa-book me-2"></i>Course Statistics</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-md-3">
-                            <h3 class="text-primary"><?php echo $stats['courses']['total']; ?></h3>
-                            <p class="mb-0">Total Courses</p>
-                        </div>
-                        <div class="col-md-3">
-                            <h3 class="text-success"><?php echo $stats['courses']['published']; ?></h3>
-                            <p class="mb-0">Published</p>
-                        </div>
-                        <div class="col-md-3">
-                            <h3 class="text-warning"><?php echo $stats['courses']['draft']; ?></h3>
-                            <p class="mb-0">Draft</p>
-                        </div>
-                        <div class="col-md-3">
-                            <h3 class="text-info">$<?php echo number_format($stats['courses']['avg_price'] ?? 0, 2); ?></h3>
-                            <p class="mb-0">Avg Price</p>
-                        </div>
-                    </div>
-                    <hr>
-                    <div class="row text-center">
-                        <div class="col-md-6">
-                            <h4 class="text-success"><?php echo $stats['courses']['free']; ?></h4>
-                            <p class="mb-0">Free Courses</p>
-                        </div>
-                        <div class="col-md-6">
-                            <h4 class="text-warning"><?php echo $stats['courses']['paid']; ?></h4>
-                            <p class="mb-0">Paid Courses</p>
-                        </div>
+        </div>
+        <div class="col-md-3 animate__animated animate__zoomIn" style="animation-delay: 0.2s;">
+            <div class="card analytics-card p-3 shadow-sm">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon bg-success text-white me-3"><i class="fas fa-book-open"></i></div>
+                    <div>
+                        <h4 class="mb-0 fw-bold"><?php echo $stats['courses']['total']; ?></h4>
+                        <small class="text-muted">Total Courses</small>
                     </div>
                 </div>
             </div>
-
-            <!-- Enrollment & Engagement -->
-            <div class="row mb-4">
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header bg-info text-white">
-                            <h5 class="mb-0"><i class="fas fa-user-plus me-2"></i>Enrollment Statistics</h5>
-                        </div>
-                        <div class="card-body text-center">
-                            <h3 class="text-primary"><?php echo $stats['enrollments']['total']; ?></h3>
-                            <p class="mb-2">Total Enrollments</p>
-                            <div class="row">
-                                <div class="col-6">
-                                    <h5 class="text-success"><?php echo $stats['enrollments']['active']; ?></h5>
-                                    <small>Active</small>
-                                </div>
-                                <div class="col-6">
-                                    <h5 class="text-warning"><?php echo $stats['enrollments']['completed']; ?></h5>
-                                    <small>Completed</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header bg-warning text-white">
-                            <h5 class="mb-0"><i class="fas fa-star me-2"></i>Engagement Statistics</h5>
-                        </div>
-                        <div class="card-body text-center">
-                            <div class="row">
-                                <div class="col-6">
-                                    <h4 class="text-primary"><?php echo $stats['engagement']['quizzes']; ?></h4>
-                                    <p class="mb-0">Quizzes</p>
-                                </div>
-                                <div class="col-6">
-                                    <h4 class="text-success"><?php echo $stats['engagement']['reviews']; ?></h4>
-                                    <p class="mb-0">Reviews</p>
-                                </div>
-                            </div>
-                            <hr>
-                            <div class="row">
-                                <div class="col-6">
-                                    <h5 class="text-info"><?php echo $stats['engagement']['quiz_attempts']; ?></h5>
-                                    <small>Quiz Attempts</small>
-                                </div>
-                                <div class="col-6">
-                                    <h5 class="text-warning"><?php echo number_format($stats['engagement']['avg_rating'] ?? 0, 1); ?>★</h5>
-                                    <small>Avg Rating</small>
-                                </div>
-                            </div>
-                        </div>
+        </div>
+        <div class="col-md-3 animate__animated animate__zoomIn" style="animation-delay: 0.3s;">
+            <div class="card analytics-card p-3 shadow-sm">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon bg-warning text-white me-3"><i class="fas fa-user-check"></i></div>
+                    <div>
+                        <h4 class="mb-0 fw-bold"><?php echo $stats['enrollments']['total']; ?></h4>
+                        <small class="text-muted">Total Enrollments</small>
                     </div>
                 </div>
             </div>
-
-            <!-- Recent Activity (30 days) -->
-            <div class="card mb-4">
-                <div class="card-header bg-secondary text-white">
-                    <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Recent Activity (Last 30 Days)</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-md-4">
-                            <h3 class="text-primary"><?php echo $stats['recent']['new_users']; ?></h3>
-                            <p class="mb-0">New Users</p>
-                        </div>
-                        <div class="col-md-4">
-                            <h3 class="text-success"><?php echo $stats['recent']['new_courses']; ?></h3>
-                            <p class="mb-0">New Courses</p>
-                        </div>
-                        <div class="col-md-4">
-                            <h3 class="text-warning"><?php echo $stats['recent']['new_enrollments']; ?></h3>
-                            <p class="mb-0">New Enrollments</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Top Categories -->
-            <div class="card">
-                <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0"><i class="fas fa-trophy me-2"></i>Top Categories</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive table-3d">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Category</th>
-                                    <th>Courses</th>
-                                    <th>Enrollments</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php
-                                $categories_query = "SELECT cat.name, cat.icon, COUNT(c.id) as course_count,
-                                                           COUNT(e.id) as enrollment_count
-                                                    FROM categories cat
-                                                    LEFT JOIN courses c ON cat.id = c.category_id
-                                                    LEFT JOIN enrollments e ON c.id = e.course_id
-                                                    GROUP BY cat.id
-                                                    ORDER BY enrollment_count DESC";
-                                $categories_result = mysqli_query($conn, $categories_query);
-                                while($category = mysqli_fetch_assoc($categories_result)):
-                                ?>
-                                    <tr>
-                                        <td>
-                                            <i class="<?php echo htmlspecialchars($category['icon']); ?> me-2"></i>
-                                            <?php echo htmlspecialchars($category['name']); ?>
-                                        </td>
-                                        <td><?php echo $category['course_count']; ?></td>
-                                        <td><?php echo $category['enrollment_count']; ?></td>
-                                    </tr>
-                                <?php endwhile; ?>
-                            </tbody>
-                        </table>
+        </div>
+        <div class="col-md-3 animate__animated animate__zoomIn" style="animation-delay: 0.4s;">
+            <div class="card analytics-card p-3 shadow-sm">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon bg-info text-white me-3"><i class="fas fa-hand-holding-usd"></i></div>
+                    <div>
+                        <h4 class="mb-0 fw-bold">₹<?php echo number_format($stats['revenue']['potential']); ?></h4>
+                        <small class="text-muted">Potential Revenue</small>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <div class="row">
+        <div class="col-lg-7 mb-4 animate__animated animate__fadeInLeft">
+            <div class="card analytics-card shadow-sm p-4 h-100">
+                <h5 class="fw-bold mb-4">User Distribution</h5>
+                <canvas id="userTypeChart" height="200"></canvas>
+            </div>
+        </div>
+
+        <div class="col-lg-5 mb-4 animate__animated animate__fadeInRight">
+            <div class="card analytics-card shadow-sm p-4 h-100">
+                <h5 class="fw-bold mb-4">Growth (Last 30 Days)</h5>
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span>New Students</span>
+                        <span class="fw-bold text-primary">+<?php echo $stats['recent']['new_users']; ?></span>
+                    </div>
+                    <div class="progress progress-thin">
+                        <div class="progress-bar bg-primary" style="width: 75%"></div>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span>New Courses</span>
+                        <span class="fw-bold text-success">+<?php echo $stats['recent']['new_courses']; ?></span>
+                    </div>
+                    <div class="progress progress-thin">
+                        <div class="progress-bar bg-success" style="width: 60%"></div>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span>New Enrollments</span>
+                        <span class="fw-bold text-warning">+<?php echo $stats['recent']['new_enrollments']; ?></span>
+                    </div>
+                    <div class="progress progress-thin">
+                        <div class="progress-bar bg-warning" style="width: 85%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-4 animate__animated animate__fadeInUp">
+            <div class="card analytics-card shadow-sm overflow-hidden">
+                <div class="card-header bg-dark text-white p-3">
+                    <h5 class="mb-0 fw-bold">Engagement Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-4 border-end">
+                            <h3 class="text-primary fw-bold"><?php echo $stats['engagement']['quizzes']; ?></h3>
+                            <p class="text-muted small">Total Quizzes</p>
+                        </div>
+                        <div class="col-6 mb-4">
+                            <h3 class="text-success fw-bold"><?php echo $stats['engagement']['reviews']; ?></h3>
+                            <p class="text-muted small">Total Reviews</p>
+                        </div>
+                        <div class="col-6 border-end">
+                            <h3 class="text-info fw-bold"><?php echo $stats['engagement']['quiz_attempts']; ?></h3>
+                            <p class="text-muted small">Quiz Attempts</p>
+                        </div>
+                        <div class="col-6">
+                            <h3 class="text-warning fw-bold"><?php echo number_format($stats['engagement']['avg_rating'] ?? 0, 1); ?>★</h3>
+                            <p class="text-muted small">Avg Course Rating</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4 animate__animated animate__fadeInUp" style="animation-delay: 0.2s;">
+            <div class="card analytics-card shadow-sm h-100">
+                <div class="card-header bg-primary text-white p-3 d-flex justify-content-between">
+                    <h5 class="mb-0 fw-bold">Top Performing Categories</h5>
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3">Category</th>
+                                <th>Courses</th>
+                                <th>Enrollments</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            $categories_query = "SELECT cat.name, cat.icon, COUNT(c.id) as course_count, 
+                                                       COUNT(e.id) as enrollment_count 
+                                                FROM categories cat 
+                                                LEFT JOIN courses c ON cat.id = c.category_id 
+                                                LEFT JOIN enrollments e ON c.id = e.course_id 
+                                                GROUP BY cat.id 
+                                                ORDER BY enrollment_count DESC LIMIT 4";
+                            $categories_result = mysqli_query($conn, $categories_query);
+                            while($category = mysqli_fetch_assoc($categories_result)):
+                            ?>
+                            <tr>
+                                <td class="ps-3 fw-bold">
+                                    <i class="<?php echo $category['icon']; ?> text-primary me-2"></i>
+                                    <?php echo htmlspecialchars($category['name']); ?>
+                                </td>
+                                <td><span class="badge bg-light text-dark rounded-pill"><?php echo $category['course_count']; ?></span></td>
+                                <td class="fw-bold text-success"><?php echo $category['enrollment_count']; ?></td>
+                            </tr>
+                            <?php endwhile; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<script>
+// Chart Configuration
+const ctx = document.getElementById('userTypeChart').getContext('2d');
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: ['Students', 'Instructors', 'Admins'],
+        datasets: [{
+            label: 'Total Count',
+            data: [
+                <?php echo $stats['users']['students']; ?>, 
+                <?php echo $stats['users']['instructors']; ?>, 
+                <?php echo $stats['users']['admins']; ?>
+            ],
+            backgroundColor: [
+                'rgba(54, 162, 235, 0.7)',
+                'rgba(75, 192, 192, 0.7)',
+                'rgba(255, 206, 86, 0.7)'
+            ],
+            borderColor: [
+                'rgba(54, 162, 235, 1)',
+                'rgba(75, 192, 192, 1)',
+                'rgba(255, 206, 86, 1)'
+            ],
+            borderWidth: 1,
+            borderRadius: 8
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { display: false }
+        },
+        scales: {
+            y: { beginAtZero: true, grid: { display: false } },
+            x: { grid: { display: false } }
+        }
+    }
+});
+</script>
 
 <?php include 'includes/footer.php'; ?>

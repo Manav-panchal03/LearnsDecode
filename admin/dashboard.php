@@ -24,10 +24,12 @@ $total_quizzes = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as coun
 $total_reviews = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as count FROM reviews"))['count'];
 ?>
 
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+
 <style>
     /* dashboard-specific components */
-    .stat-card { border: none; border-radius: 15px; padding: 25px; background: #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.05); border-bottom: 4px solid var(--primary-color); }
-    .stat-card:hover { transform: translateY(-5px); box-shadow: 0 12px 25px rgba(0,0,0,0.1); }
+    .stat-card { border: none; border-radius: 15px; padding: 25px; background: #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.05); border-bottom: 4px solid var(--primary-color); transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    .stat-card:hover { transform: translateY(-10px); box-shadow: 0 12px 25px rgba(0,0,0,0.1); }
     .stat-card .card-body { display: flex; align-items: center; justify-content: space-between; }
     .stat-card h3 { font-size: 2.5rem; font-weight: 700; margin-bottom: 5px; }
     .stat-card p { margin-bottom: 0; font-weight: 500; color: #666; }
@@ -55,38 +57,37 @@ $total_reviews = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as coun
     .status-badge { position: absolute; top: 10px; right: 10px; font-size: 0.7rem; padding: 5px 12px; border-radius: 50px; font-weight: 700; }
     .bg-draft { background: #fff4e5; color: #ff9800; }
     .bg-published { background: #e6fffa; color: #38b2ac; }
+    .opacity-75 { opacity: 0.75; }
 </style>
 
-<!-- main content begins -->
 <div class="container-fluid p-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 animate__animated animate__fadeInDown">
         <h2 class="fw-bold">Administrator Dashboard</h2>
     </div>
 
-    <!-- Statistics Cards -->
     <div class="row g-4 mb-4">
-        <div class="col-md-3">
+        <div class="col-md-3 animate__animated animate__fadeInUp" style="animation-delay: 0.1s;">
             <div class="stat-card">
                 <h6 class="text-muted small text-uppercase">Total Users</h6>
                 <h2 class="fw-bold mb-0"><?php echo $total_users; ?></h2>
             </div>
         </div>
 
-        <div class="col-md-3">
+        <div class="col-md-3 animate__animated animate__fadeInUp" style="animation-delay: 0.2s;">
             <div class="stat-card" style="border-color: #2ed573;">
                 <h6 class="text-muted small text-uppercase">Students</h6>
                 <h2 class="fw-bold mb-0"><?php echo $total_students; ?></h2>
             </div>
         </div>
 
-        <div class="col-md-3">
+        <div class="col-md-3 animate__animated animate__fadeInUp" style="animation-delay: 0.3s;">
             <div class="stat-card" style="border-color: #ffa726;">
                 <h6 class="text-muted small text-uppercase">Instructors</h6>
                 <h2 class="fw-bold mb-0"><?php echo $total_instructors; ?></h2>
             </div>
         </div>
 
-        <div class="col-md-3">
+        <div class="col-md-3 animate__animated animate__fadeInUp" style="animation-delay: 0.4s;">
             <div class="stat-card" style="border-color: #3742fa;">
                 <h6 class="text-muted small text-uppercase">Pending Instructors</h6>
                 <h2 class="fw-bold mb-0"><?php echo $pending_instructors; ?></h2>
@@ -95,9 +96,8 @@ $total_reviews = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as coun
         </div>
     </div>
 
-    <!-- Course Stats -->
     <div class="row g-4 mb-4">
-        <div class="col-md-4">
+        <div class="col-md-4 animate__animated animate__fadeInLeft" style="animation-delay: 0.5s;">
             <div class="stat-card">
                 <h6 class="text-muted small text-uppercase">Total Courses</h6>
                 <h2 class="fw-bold mb-0"><?php echo $total_courses; ?></h2>
@@ -108,7 +108,7 @@ $total_reviews = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as coun
             </div>
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-4 animate__animated animate__fadeInUp" style="animation-delay: 0.5s;">
             <div class="stat-card" style="border-color: #2ed573;">
                 <h6 class="text-muted small text-uppercase">Enrollments</h6>
                 <h2 class="fw-bold mb-0"><?php echo $total_enrollments; ?></h2>
@@ -118,7 +118,7 @@ $total_reviews = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as coun
             </div>
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-4 animate__animated animate__fadeInRight" style="animation-delay: 0.5s;">
             <div class="stat-card" style="border-color: #3742fa;">
                 <h6 class="text-muted small text-uppercase">Quizzes & Reviews</h6>
                 <h2 class="fw-bold mb-0"><?php echo $total_quizzes; ?></h2>
@@ -129,10 +129,11 @@ $total_reviews = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as coun
         </div>
     </div>
 
-    <h4 class="fw-bold mb-4">Recent Courses</h4>
+    <h4 class="fw-bold mb-4 animate__animated animate__fadeIn" style="animation-delay: 0.6s;">Recent Courses</h4>
     <div class="row g-4">
         <?php
         $recent_courses = mysqli_query($conn, "SELECT c.*, u.name as instructor_name FROM courses c JOIN users u ON c.instructor_id = u.id ORDER BY c.created_at DESC LIMIT 6");
+        $delay = 0.7;
         if(mysqli_num_rows($recent_courses) > 0){
             while($course = mysqli_fetch_assoc($recent_courses)){
                 $imgName = (!empty($course['thumbnail'])) ? $course['thumbnail'] : 'course-default.jpg';
@@ -141,7 +142,7 @@ $total_reviews = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as coun
                 $badgeClass = ($status == 'published' || $status == 'active') ? 'bg-published' : 'bg-draft';
                 $statusText = ($status == 'published' || $status == 'active') ? 'Published' : 'Draft';
         ?>
-        <div class="col-md-4">
+        <div class="col-md-4 animate__animated animate__zoomIn" style="animation-delay: <?= $delay ?>s;">
             <div class="course-card">
                 <div class="thumb-container">
                     <img src="<?= $imgPath ?>" class="img-fluid" alt="Course Thumbnail" onerror="this.src='../uploads/thumbnails/course-default.jpg'">
@@ -157,10 +158,11 @@ $total_reviews = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as coun
             </div>
         </div>
         <?php
+                $delay += 0.1;
             }
         } else {
         ?>
-        <div class="col-12 text-center py-5 bg-white rounded-4 shadow-sm">
+        <div class="col-12 text-center py-5 bg-white rounded-4 shadow-sm animate__animated animate__fadeIn">
             <i class="fas fa-book-open fa-3x text-muted mb-3"></i>
             <h5>No courses found.</h5>
             <p class="text-muted">Courses will appear here once instructors start creating them.</p>
@@ -168,9 +170,8 @@ $total_reviews = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as coun
         <?php } ?>
     </div>
 
-    <!-- Recent Activity -->
     <div class="row mt-5">
-        <div class="col-md-6">
+        <div class="col-md-6 animate__animated animate__slideInLeft" style="animation-delay: 1s;">
             <div class="activity-card">
                 <div class="card-header bg-light">
                     <h5 class="mb-0"><i class="fas fa-user-check me-2 text-primary"></i>Recent Instructor Requests</h5>
@@ -181,7 +182,7 @@ $total_reviews = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as coun
                     if(mysqli_num_rows($recent_requests) > 0){
                         while($request = mysqli_fetch_assoc($recent_requests)){
                             $initials = strtoupper(substr($request['name'], 0, 1));
-                            echo '<div class="activity-item d-flex align-items-center">';
+                            echo '<div class="activity-item d-flex align-items-center animate__animated animate__fadeIn">';
                             echo '<div class="activity-avatar">' . $initials . '</div>';
                             echo '<div class="flex-grow-1">';
                             echo '<strong class="text-dark">' . htmlspecialchars($request['name']) . '</strong><br>';
@@ -201,10 +202,10 @@ $total_reviews = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as coun
             </div>
         </div>
 
-        <div class="col-md-6">
+        <div class="col-md-6 animate__animated animate__slideInRight" style="animation-delay: 1s;">
             <div class="activity-card">
                 <div class="card-header bg-light">
-                    <h5 class="mb-0"><i class="fas fa-book me-2 text-success"></i>Recent Courses</h5>
+                    <h5 class="mb-0"><i class="fas fa-book me-2 text-success"></i>Recent Courses Activity</h5>
                 </div>
                 <div class="card-body p-0">
                     <?php
@@ -213,7 +214,7 @@ $total_reviews = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as coun
                         while($course = mysqli_fetch_assoc($recent_courses_list)){
                             $status_class = $course['status'] == 'published' ? 'success' : 'warning';
                             $status_text = ucfirst($course['status']);
-                            echo '<div class="activity-item d-flex align-items-center">';
+                            echo '<div class="activity-item d-flex align-items-center animate__animated animate__fadeIn">';
                             echo '<div class="activity-avatar bg-' . $status_class . '">';
                             echo '<i class="fas fa-book"></i>';
                             echo '</div>';
@@ -236,9 +237,5 @@ $total_reviews = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as coun
         </div>
     </div>
 </div>
-
-<style>
-.opacity-75 { opacity: 0.75; }
-</style>
 
 <?php include 'includes/footer.php'; ?>
