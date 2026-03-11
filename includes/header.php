@@ -37,7 +37,7 @@ require_once __DIR__ . '/../config/config.php';
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto align-items-center">
-                <li class="nav-item"><a class="nav-link" href="index.php">Courses</a></li>
+                <li class="nav-item"><a class="nav-link" href="courses.php">Courses</a></li>
                 <?php if(isset($_SESSION['user_id'])): ?>
                     <?php if($_SESSION['user_role'] == 'admin'): ?>
                         <li class="nav-item"><a class="nav-link dashboard-link" href="<?= defined('BASE_URL') ? BASE_URL : '' ?>/admin/dashboard.php"><i class="fas fa-tachometer-alt me-1"></i>Admin Dashboard</a></li>
