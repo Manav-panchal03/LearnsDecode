@@ -79,6 +79,8 @@ $admin_email = $_SESSION['user_email'];
         <a href="instructor_requests.php" class="<?= basename($_SERVER['PHP_SELF']) == 'instructor_requests.php' ? 'active' : '' ?>"><i class="fas fa-user-check"></i> Instructor Requests</a>
         <a href="manage_categories.php" class="<?= basename($_SERVER['PHP_SELF']) == 'manage_categories.php' ? 'active' : '' ?>"><i class="fas fa-tags"></i> Categories</a>
         <a href="reports.php" class="<?= basename($_SERVER['PHP_SELF']) == 'reports.php' ? 'active' : '' ?>"><i class="fas fa-chart-bar"></i> Reports</a>
+        <a href="enrolled_students.php" class="<?= basename($_SERVER['PHP_SELF']) == 'enrolled_students.php' ? 'active' : '' ?>"><i class="fas fa-user-graduate"></i> Enrolled Students</a>
+        <a href="certified_students.php" class="<?= basename($_SERVER['PHP_SELF']) == 'certified_students.php' ? 'active' : '' ?>"><i class="fas fa-certificate"></i> Certified Students</a>
         <hr style="border-color: rgba(255,255,255,0.1)">
         <a href="profile.php" class="<?= basename($_SERVER['PHP_SELF']) == 'profile.php' ? 'active' : '' ?>"><i class="fas fa-user-circle"></i> Profile</a>
         <a href="<?= defined('BASE_URL') ? BASE_URL : '' ?>/logout.php" class="text-danger" onclick="return confirm('Are you sure you want to logout?')"><i class="fas fa-power-off"></i> Logout</a>
