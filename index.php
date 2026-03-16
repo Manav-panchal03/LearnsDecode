@@ -62,36 +62,67 @@ $course_result = mysqli_query($conn, $course_query);
     </div>
     
     <div class="row g-4" id="courseContainer">
-        <?php if($course_result && mysqli_num_rows($course_result) > 0): $c_delay = 100; ?>
-            <?php while($row = mysqli_fetch_assoc($course_result)): 
-                $purchased = ($row['is_purchased'] > 0);
-            ?>
-                <div class="col-md-4" data-aos="zoom-in-up" data-aos-delay="<?= $c_delay; ?>">
-                    <div class="card border-0 shadow-sm h-100 hover-card overflow-hidden">
-                        <?php if($purchased): ?>
-                            <div class="purchased-badge">Enrolled</div>
-                        <?php endif; ?>
-                        
-                        <?php $thumb = (!empty($row['thumbnail'])) ? "uploads/thumbnails/".$row['thumbnail'] : "https://via.placeholder.com/400x250"; ?>
-                        <div style="height: 200px; overflow: hidden;">
-                            <img src="<?= $thumb ?>" class="card-img-top w-100 h-100" alt="Course Image" style="object-fit: cover;">
-                        </div>
-                        <div class="card-body">
-                            <span class="badge bg-light text-primary mb-2"><?= ucfirst($row['level'] ?? 'Beginner') ?></span>
-                            <h5 class="card-title fw-bold text-truncate"><?= $row['title'] ?></h5>
-                            <p class="text-muted small">By <?= $row['instructor_name'] ?></p>
-                            <div class="d-flex justify-content-between align-items-center mt-3">
-                                <span class="h5 fw-bold text-primary mb-0">
-                                    <?= ($row['price'] > 0) ? '₹' . number_format($row['price'], 0) : 'Free'; ?>
-                                </span>
-                                <a href="course_details.php?id=<?= $row['id'] ?>" class="btn btn-outline-primary btn-sm rounded-pill px-3">Explore</a>
+    <?php if($course_result && mysqli_num_rows($course_result) > 0): $c_delay = 100; ?>
+        <?php while($row = mysqli_fetch_assoc($course_result)): 
+            $purchased = ($row['is_purchased'] > 0);
+            $c_id = $row['id'];
+
+            // --- RATING FETCH LOGIC ---
+            $rating_q = mysqli_query($conn, "SELECT AVG(rating) as avg_r, COUNT(id) as total_r FROM reviews WHERE course_id = '$c_id'");
+            $rating_data = mysqli_fetch_assoc($rating_q);
+            $avg = round($rating_data['avg_r'], 1) ?: 0;
+            $total_reviews = $rating_data['total_r'] ?: 0;
+        ?>
+            <div class="col-md-4" data-aos="zoom-in-up" data-aos-delay="<?= $c_delay; ?>">
+                <div class="card border-0 shadow-sm h-100 hover-card overflow-hidden" style="border-radius: 20px;">
+                    <?php if($purchased): ?>
+                        <div class="purchased-badge">Enrolled</div>
+                    <?php endif; ?>
+                    
+                    <?php $thumb = (!empty($row['thumbnail'])) ? "uploads/thumbnails/".$row['thumbnail'] : "https://via.placeholder.com/400x250"; ?>
+                    <div style="height: 200px; overflow: hidden;">
+                        <img src="<?= $thumb ?>" class="card-img-top w-100 h-100" alt="Course Image" style="object-fit: cover;">
+                    </div>
+
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-light text-primary"><?= ucfirst($row['level'] ?? 'Beginner') ?></span>
+                            
+                            <div class="text-warning small">
+                                <?php 
+                                for($i = 1; $i <= 5; $i++) {
+                                    if($i <= floor($avg)) {
+                                        echo '<i class="fas fa-star"></i>'; // Full Star
+                                    } elseif($avg > ($i - 1) && $avg < $i) {
+                                        echo '<i class="fas fa-star-half-alt"></i>'; // Half Star
+                                    } else {
+                                        echo '<i class="far fa-star text-muted"></i>'; // Empty Star
+                                    }
+                                }
+                                ?>
+                                <span class="ms-1 text-dark fw-bold"><?= $avg ?></span>
                             </div>
+                        </div>
+
+                        <h5 class="card-title fw-bold text-truncate mb-1"><?= $row['title'] ?></h5>
+                        <p class="text-muted small mb-0">By <?= $row['instructor_name'] ?></p>
+                        
+                        <div class="mb-3">
+                            <small class="text-muted">(<?= $total_reviews ?> reviews)</small>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                            <span class="h5 fw-bold text-primary mb-0">
+                                <?= ($row['price'] > 0) ? '₹' . number_format($row['price'], 0) : 'Free'; ?>
+                            </span>
+                            <a href="course_details.php?id=<?= $row['id'] ?>" class="btn btn-outline-primary btn-sm rounded-pill px-4 fw-bold">Explore</a>
                         </div>
                     </div>
                 </div>
-            <?php $c_delay += 100; endwhile; ?>
-        <?php endif; ?>
-    </div>
+            </div>
+        <?php $c_delay += 100; endwhile; ?>
+    <?php endif; ?>
+</div>
 </div>
 
 <style>
