@@ -9,18 +9,16 @@ if(!isset($_SESSION['user_id'])){
 }
 
 if($_SERVER['REQUEST_METHOD'] == 'POST'){
-    $user_id = $_SESSION['user_id']; // Session mathi ID lo
+    $user_id = $_SESSION['user_id']; 
     $course_id = mysqli_real_escape_string($conn, $_POST['course_id']);
     $phone = mysqli_real_escape_string($conn, $_POST['phone']);
     $txn_id = "TXN" . rand(100000, 999999); 
 
     // 1. Check karo ke student enrolled che? 
-    // DHAYAN AAPO: Jo tamara table ma column nu nam 'student_id' hoy toh niche sudharo
     $check_query = "SELECT id FROM enrollments WHERE student_id = '$user_id' AND course_id = '$course_id'";
     $check_res = mysqli_query($conn, $check_query);
 
     if(!$check_res) {
-        // Jo ahiya pan error ave, toh tamare database table check karvu padse
         die("Database Error: " . mysqli_error($conn));
     }
 
@@ -34,10 +32,13 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
     $course_data = mysqli_fetch_assoc($course_q);
     $amount = $course_data['price'] ?? 0;
 
+    // --- REVENUE CALCULATION (70% to Instructor) ---
+    $instructor_revenue = $amount * 0.70; 
+
     // 3. Database ma enrollment entry karo
-    // Ahiya 'student_id' use karyu che 'user_id' ni jagyae
-    $query = "INSERT INTO enrollments (student_id, course_id, enrolled_at, status, payment_status, transaction_id, amount) 
-              VALUES ('$user_id', '$course_id', NOW(), 'active', 'completed', '$txn_id', '$amount')";
+    // Ahiya 'instructor_revenue' column add kari che
+    $query = "INSERT INTO enrollments (student_id, course_id, enrolled_at, status, payment_status, transaction_id, amount, instructor_revenue) 
+              VALUES ('$user_id', '$course_id', NOW(), 'active', 'completed', '$txn_id', '$amount', '$instructor_revenue')";
     
     if(mysqli_query($conn, $query)){
         header("Location: student/dashboard.php?order=success");

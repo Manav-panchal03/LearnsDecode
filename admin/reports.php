@@ -38,11 +38,15 @@ $stats['engagement'] = [
     'avg_rating' => mysqli_fetch_assoc(mysqli_query($conn, "SELECT AVG(rating) as avg FROM reviews"))['avg']
 ];
 
+// Potential Revenue (Admin 30% / Instructor 70% Split)
+$revenue_data = mysqli_fetch_assoc(mysqli_query($conn, "SELECT SUM(c.price) as total FROM courses c JOIN enrollments e ON c.id = e.course_id"));
+$total_potential = $revenue_data['total'] ?? 0;
 // Potential Revenue (Corrected logic)
 $stats['revenue'] = [
-    'potential' => mysqli_fetch_assoc(mysqli_query($conn, "SELECT SUM(c.price) as total FROM courses c JOIN enrollments e ON c.id = e.course_id"))['total'] ?? 0
+    'potential' => $total_potential,
+    'admin_share' => $total_potential * 0.30, // 30% Admin Share
+    'instructor_share' => $total_potential * 0.70 // 70% Instructor Share
 ];
-
 // Recent activity (last 30 days)
 $stats['recent'] = [
     'new_users' => mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as count FROM users WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)"))['count'],
@@ -129,8 +133,8 @@ $stats['recent'] = [
                 <div class="d-flex align-items-center">
                     <div class="stat-icon bg-info text-white me-3"><i class="fas fa-hand-holding-usd"></i></div>
                     <div>
-                        <h4 class="mb-0 fw-bold">₹<?php echo number_format($stats['revenue']['potential']); ?></h4>
-                        <small class="text-muted">Potential Revenue</small>
+                        <h4 class="mb-0 fw-bold">₹<?php echo number_format($stats['revenue']['admin_share'], 2); ?></h4>
+                        <small class="text-muted">Revenue (30% share)</small>
                     </div>
                 </div>
             </div>

@@ -40,8 +40,9 @@ $total_q = mysqli_num_rows($questions_q);
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
-    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
+        
         :root { --primary: #4318ff; --secondary: #6c757d; --bg: #f4f7fe; --text-dark: #2b3674; }
         body { background: var(--bg); font-family: 'Plus Jakarta Sans', sans-serif; color: var(--text-dark); }
         
@@ -182,6 +183,57 @@ $total_q = mysqli_num_rows($questions_q);
             }, 500);
         });
     });
+
+</script>
+
+<script>
+let switchCount = 0;
+
+document.addEventListener("visibilitychange", function() {
+    if (document.hidden) {
+        switchCount++;
+
+        if (switchCount === 1) {
+            // First Warning
+            Swal.fire({
+                icon: 'warning',
+                title: 'Warning 1/2',
+                text: 'You switched tabs! Please stay on this page to complete your quiz.',
+                confirmButtonColor: '#6c63ff',
+                confirmButtonText: 'I Understand'
+            });
+        } 
+        else if (switchCount === 2) {
+            // Second & Last Warning
+            Swal.fire({
+                icon: 'error',
+                title: 'Final Warning!',
+                text: 'If you switch tabs one more time, your quiz will be automatically submitted!',
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Last Chance'
+            });
+        } 
+        else if (switchCount >= 3) {
+            // Final Action: Auto Submit
+            Swal.fire({
+                icon: 'info',
+                title: 'Quiz Terminated',
+                text: 'Multiple tab switches detected. For security reasons, your quiz has been submitted automatically.',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                timer: 3000, // 3 seconds pachi submit thase
+                willClose: () => {
+                    document.getElementById("quizForm").submit();
+                }
+            });
+        }
+    }
+});
+
+// Extra layer: Window Blur (jyare biji window upar click kare)
+window.onblur = function() {
+    // Tame aya pan same logic use kari shako cho jo bau strict rakhvu hoy toh
+};
 </script>
 
 </body>

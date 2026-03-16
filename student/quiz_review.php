@@ -143,7 +143,7 @@ $questions_q = mysqli_query($conn, "SELECT * FROM quiz_questions WHERE quiz_id =
         </div>
 
         <?php if($selected_id === null): ?>
-            <p class="text-muted small mt-2 ms-2 italic text-danger"><i class="fas fa-info-circle me-1"></i> Tame aa prashna skip karyo hato.</p>
+            <p class="text-muted small mt-2 ms-2 italic text-danger"><i class="fas fa-info-circle me-1"></i> You did not answer this question.</p>
         <?php endif; ?>
     </div>
     <?php $q_index++; endwhile; ?>

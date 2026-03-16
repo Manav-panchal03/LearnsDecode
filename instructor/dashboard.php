@@ -106,6 +106,8 @@ $p_img = ($profile_data && !empty($profile_data['profile_pic']) && $profile_data
         <a href="broadcast_center.php"><i class="fas fa-envelope"></i> Broadcast Center </a>
         <a href="manage_students.php"><i class="fas fa-users"></i> Students</a>
         <a href="manage_certificates.php"><i class="fas fa-certificate"></i> Certificates</a>
+        <a href="earnings.php"><i class="fas fa-wallet"></i> Earnings</a>
+        <a href="analytics.php"><i class="fas fa-chart-line"></i> Analytics</a>
         <hr style="border-color: rgba(255,255,255,0.1)">
         <a href="<?= defined('BASE_URL') ? BASE_URL : '' ?>/logout.php" class="text-danger"><i class="fas fa-power-off"></i> Logout</a>
     </div>

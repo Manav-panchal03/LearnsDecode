@@ -237,6 +237,60 @@ $current_progress = $resume_course ? getCourseProgress($conn, $enrollment_id, $r
             }
             ?>
         </div>
+
+        <?php if($resume_course && $current_progress == 100): 
+            
+            // 1. Check if user already reviewed this course
+        $c_id = $resume_course['course_id'];
+        $user_id = $_SESSION['user_id'];
+        $rev_check_q = mysqli_query($conn, "SELECT id FROM reviews WHERE course_id = '$c_id' AND user_id = '$user_id'");
+        
+        // 2. Card tyare j dekhadvo jyare review na apyo hoy
+        if(mysqli_num_rows($rev_check_q) == 0):
+            
+            ?>
+    <section class="mb-5 mt-3 animate__animated animate__bounceInUp">
+        <div class="card border-0 shadow-lg p-4 text-center" style="border-radius: 30px; background: #fff;">
+            <div class="mb-3">
+                <span class="badge bg-success-soft text-success px-4 py-2 rounded-pill" style="background: rgba(25, 135, 84, 0.1);">
+                    🎉 CONGRATULATIONS!
+                </span>
+            </div>
+            <h3 class="fw-bold">You've Completed the Course!</h3>
+            <p class="text-muted">How was your learning experience with LearnsDecode? Your feedback helps us grow.</p>
+            
+            <form id="ratingForm" class="mt-3">
+                <input type="hidden" name="course_id" value="<?= $resume_course['course_id'] ?>">
+                
+                <div class="star-rating-wrapper mb-3">
+                    <div class="star-rating">
+                        <input type="radio" id="star-5" name="rating" value="5" required /><label for="star-5" class="fas fa-star"></label>
+                        <input type="radio" id="star-4" name="rating" value="4" /><label for="star-4" class="fas fa-star"></label>
+                        <input type="radio" id="star-3" name="rating" value="3" /><label for="star-3" class="fas fa-star"></label>
+                        <input type="radio" id="star-2" name="rating" value="2" /><label for="star-2" class="fas fa-star"></label>
+                        <input type="radio" id="star-1" name="rating" value="1" /><label for="star-1" class="fas fa-star"></label>
+                    </div>
+                </div>
+
+                <div class="col-md-8 mx-auto mb-4">
+                    <textarea name="comment" class="form-control border-0 bg-light p-3" rows="3" placeholder="Share your thoughts about this course..." style="border-radius: 15px;"></textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-primary rounded-pill px-5 py-2 fw-bold shadow-sm hover-up">
+                    Submit Review <i class="fas fa-paper-plane ms-2"></i>
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <style>
+        .star-rating { direction: rtl; display: inline-block; }
+        .star-rating input { display: none; }
+        .star-rating label { color: #e9edf7; font-size: 2.5rem; cursor: pointer; transition: 0.3s; padding: 0 5px; }
+        .star-rating label:hover, .star-rating label:hover ~ label, .star-rating input:checked ~ label { color: #ffc107; transform: scale(1.1); }
+    </style>
+    <?php endif; 
+    endif; ?>
     </section>
 </div>
 
@@ -248,7 +302,7 @@ $current_progress = $resume_course ? getCourseProgress($conn, $enrollment_id, $r
     function noResumeAlert() {
         Swal.fire({
             title: 'No Active Course! 🔍',
-            text: 'Tame haji sudhi koi course join nathi karyo.',
+            text: 'Your feedback is saved successfully !',
             icon: 'info',
             confirmButtonColor: '#4318ff'
         });
@@ -258,6 +312,35 @@ $current_progress = $resume_course ? getCourseProgress($conn, $enrollment_id, $r
     if(urlParams.get('order') === 'success') {
         Swal.fire({ title: 'Successfully Enrolled! 🚀', icon: 'success', confirmButtonColor: '#4318ff' });
     }
+</script>
+
+<script>
+// --- RATING SUBMISSION WORKFLOW ---
+const ratingForm = document.getElementById('ratingForm');
+if(ratingForm) {
+    ratingForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+
+        fetch('save_review.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.status === 'success') {
+                Swal.fire({
+                    title: 'Thank You! 🌟',
+                    text: 'Tamari rating successfully save thai gai che.',
+                    icon: 'success',
+                    confirmButtonColor: '#4318ff'
+                }).then(() => location.reload());
+            } else {
+                Swal.fire({ title: 'Oops!', text: data.message, icon: 'warning' });
+            }
+        });
+    });
+}
 </script>
 </body>
 </html>
