@@ -15,6 +15,14 @@ $units_res = mysqli_query($conn, "SELECT * FROM units WHERE course_id = '$course
 
 // Login status check karo
 $is_logged_in = isset($_SESSION['user_id']) ? 'true' : 'false';
+
+// Enrollment check karo
+$is_enrolled = false;
+if ($is_logged_in === 'true') {
+    $user_id = $_SESSION['user_id'];
+    $enrolled_check = mysqli_query($conn, "SELECT id FROM enrollments WHERE student_id = '$user_id' AND course_id = '$course_id'");
+    $is_enrolled = mysqli_num_rows($enrolled_check) > 0;
+}
 ?>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -82,9 +90,15 @@ $is_logged_in = isset($_SESSION['user_id']) ? 'true' : 'false';
                     <div class="card-body p-4 text-center">
                         <h2 class="fw-bold text-primary mb-3">₹<?= number_format($course['price'], 0) ?></h2>
                         
+                        <?php if ($is_enrolled): ?>
+                        <button disabled class="btn btn-success w-100 py-3 rounded-3 fw-bold shadow-sm mb-3">
+                            You already purchased it
+                        </button>
+                        <?php else: ?>
                         <button onclick="checkLoginBeforeEnroll()" class="btn btn-primary w-100 py-3 rounded-3 fw-bold shadow-sm mb-3">
                             Enroll Now
                         </button>
+                        <?php endif; ?>
                         
                         <p class="small text-muted mb-0">Select "Preview" in curriculum to watch.</p>
                     </div>

@@ -370,7 +370,7 @@ $p_img = (!empty($profile_data['profile_pic']) && $profile_data['profile_pic'] !
                 <div id="edit_file_div" class="mb-3" style="display: ${currentType === 'material' ? 'block' : 'none'};">
                     <label class="form-label">Update Attachment (Optional)</label>
                     <input type="file" id="edit_attachment" class="form-control" accept=".pdf,.docx,.jpg,.png">
-                    <small class="text-muted">Max 5MB. Khali rakhsho toh junu file rehse.</small>
+                    <small class="text-muted">Max 5MB. if upload box is empty, old file will be remain.</small>
                 </div>
             </div>
         `,

@@ -17,10 +17,39 @@ $admin_id = $_SESSION['user_id'];
 if(isset($_POST['save'])){
     $name = mysqli_real_escape_string($conn, $_POST['name']);
     $email = mysqli_real_escape_string($conn, $_POST['email']);
-    mysqli_query($conn, "UPDATE users SET name='$name', email='$email' WHERE id=$admin_id");
-    $_SESSION['user_name'] = $name;
-    $_SESSION['user_email'] = $email;
-    $message = 'Profile updated successfully!';
+
+    $update_password_sql = '';
+    $errors = [];
+
+    if(!empty($_POST['current_password']) || !empty($_POST['new_password']) || !empty($_POST['confirm_password'])){
+        $current_password = $_POST['current_password'] ?? '';
+        $new_password = $_POST['new_password'] ?? '';
+        $confirm_password = $_POST['confirm_password'] ?? '';
+
+        if(empty($current_password) || empty($new_password) || empty($confirm_password)){
+            $errors[] = 'Please fill all password fields to reset password.';
+        } elseif($new_password !== $confirm_password){
+            $errors[] = 'New password and confirm password do not match.';
+        } else {
+            $existing_user = mysqli_fetch_assoc(mysqli_query($conn, "SELECT password FROM users WHERE id=$admin_id"));
+            if(!$existing_user || !password_verify($current_password, $existing_user['password'])){
+                $errors[] = 'Current password is incorrect.';
+            } else {
+                $hashed = password_hash($new_password, PASSWORD_DEFAULT);
+                $update_password_sql = ", password='$hashed'";
+            }
+        }
+    }
+
+    if(empty($errors)){
+        $sql = "UPDATE users SET name='$name', email='$email'$update_password_sql WHERE id=$admin_id";
+        mysqli_query($conn, $sql);
+        $_SESSION['user_name'] = $name;
+        $_SESSION['user_email'] = $email;
+        $message = 'Profile updated successfully!';
+    } else {
+        $error_message = implode('<br>', $errors);
+    }
 }
 
 $admin = mysqli_fetch_assoc(mysqli_query($conn, "SELECT name,email FROM users WHERE id=$admin_id"));

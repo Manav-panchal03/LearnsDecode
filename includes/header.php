@@ -1,12 +1,7 @@
-<!--Aa file ma apne Navbar banavishu 
-jema Login thaya pachi "My Dashboard" dekhase ane Login pehla "Login/Register".
--->
 <?php
-// start session when header is included, but do not force login here
 if(session_status() === PHP_SESSION_NONE){
     session_start();
 }
-// load configuration so BASE_URL is available for links
 require_once __DIR__ . '/../config/config.php';
 ?>
 <!DOCTYPE html>
@@ -18,6 +13,11 @@ require_once __DIR__ . '/../config/config.php';
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+
     <style>
         body { font-family: 'Poppins', sans-serif; background-color: #f8f9fa; }
         .navbar { background-color: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
@@ -25,6 +25,8 @@ require_once __DIR__ . '/../config/config.php';
         .btn-primary:hover { background-color: #5751d9; }
         .dashboard-link { color: #6c63ff !important; font-weight: 600; }
         .dashboard-link:hover { color: #5751d9 !important; }
+        /* SweetAlert Custom Styling to match LearnsDecode */
+        .swal2-popup { border-radius: 20px !important; font-family: 'Poppins', sans-serif; }
     </style>
 </head>
 <body>
@@ -46,7 +48,12 @@ require_once __DIR__ . '/../config/config.php';
                     <?php else: ?>
                         <li class="nav-item"><a class="nav-link dashboard-link" href="<?= defined('BASE_URL') ? BASE_URL : '' ?>/student/dashboard.php"><i class="fas fa-graduation-cap me-1"></i>My Dashboard</a></li>
                     <?php endif; ?>
-                    <li class="nav-item"><a class="btn btn-outline-danger btn-sm ms-lg-3" href="<?= defined('BASE_URL') ? BASE_URL : '' ?>/logout.php" onclick="return confirm('Are you sure you want to logout?')"><i class="fas fa-sign-out-alt me-1"></i>Logout</a></li>
+                    
+                    <li class="nav-item">
+                        <a class="btn btn-outline-danger btn-sm ms-lg-3" href="javascript:void(0);" onclick="confirmLogout()">
+                            <i class="fas fa-sign-out-alt me-1"></i>Logout
+                        </a>
+                    </li>
                 <?php else: ?>
                     <li class="nav-item"><a class="nav-link" href="<?= defined('BASE_URL') ? BASE_URL : '' ?>/login.php">Login</a></li>
                     <li class="nav-item"><a class="btn btn-primary btn-sm ms-lg-3 text-white" href="<?= defined('BASE_URL') ? BASE_URL : '' ?>/register.php"><i class="fas fa-user-plus me-1"></i>Join for Free</a></li>
@@ -55,3 +62,24 @@ require_once __DIR__ . '/../config/config.php';
         </div>
     </div>
 </nav>
+
+<script>
+function confirmLogout() {
+    Swal.fire({
+        title: 'Ready to Leave?',
+        text: "Are you sure you want to logout from LearnsDecode?",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#6c63ff', // LearnsDecode Primary Color
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, Logout',
+        cancelButtonText: 'Stay Here',
+        showClass: { popup: 'animate__animated animate__fadeInDown' },
+        hideClass: { popup: 'animate__animated animate__fadeOutUp' }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = '<?= defined('BASE_URL') ? BASE_URL : '' ?>/logout.php';
+        }
+    });
+}
+</script>

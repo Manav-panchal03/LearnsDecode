@@ -53,6 +53,23 @@ $stats['recent'] = [
     'new_courses' => mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as count FROM courses WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)"))['count'],
     'new_enrollments' => mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as count FROM enrollments WHERE enrolled_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)"))['count']
 ];
+
+// Quizzes detail list for modal
+$quizzes_list = mysqli_query($conn, "SELECT q.id, q.title AS quiz_title, q.total_marks, q.status, q.created_at, c.title AS course_title, u.name AS instructor_name, u.email AS instructor_email
+    FROM quizzes q
+    LEFT JOIN courses c ON q.course_id = c.id
+    LEFT JOIN users u ON c.instructor_id = u.id
+    ORDER BY q.created_at DESC");
+
+// Quiz attempts detail list for modal
+$quiz_attempts_list = mysqli_query($conn, "SELECT qa.id, qa.score, qa.attempted_at, q.title AS quiz_title, c.title AS course_title,
+    s.name AS student_name, s.email AS student_email, e.status AS enrollment_status
+    FROM quiz_attempts qa
+    LEFT JOIN enrollments e ON qa.enrollment_id = e.id
+    LEFT JOIN users s ON e.student_id = s.id
+    LEFT JOIN quizzes q ON qa.quiz_id = q.id
+    LEFT JOIN courses c ON q.course_id = c.id
+    ORDER BY qa.attempted_at DESC");
 ?>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
@@ -143,7 +160,7 @@ $stats['recent'] = [
                 <div class="card-header bg-dark text-white p-3"><h5 class="mb-0 fw-bold">Engagement Statistics</h5></div>
                 <div class="card-body">
                     <div class="row text-center">
-                        <div class="col-6 mb-4 border-end">
+                        <div class="col-6 mb-4 border-end rating-trigger" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#totalQuizzesModal">
                             <h3 class="text-primary fw-bold"><?php echo $stats['engagement']['quizzes']; ?></h3>
                             <p class="text-muted small">Total Quizzes</p>
                         </div>
@@ -151,7 +168,7 @@ $stats['recent'] = [
                             <h3 class="text-success fw-bold"><?php echo $stats['engagement']['reviews']; ?></h3>
                             <p class="text-muted small">Total Reviews</p>
                         </div>
-                        <div class="col-6 border-end">
+                        <div class="col-6 border-end rating-trigger" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#quizAttemptsModal">
                             <h3 class="text-info fw-bold"><?php echo $stats['engagement']['quiz_attempts']; ?></h3>
                             <p class="text-muted small">Quiz Attempts</p>
                         </div>
@@ -220,6 +237,92 @@ $stats['recent'] = [
                             <tr class="animate__animated animate__fadeInUp">
                                 <td style="width: 40%;"><h6 class="fw-bold mb-0 text-truncate"><?= $cr['title'] ?></h6><small class="text-muted"><?= $cr['total_r'] ?> Reviews</small></td>
                                 <td><div class="d-flex align-items-center"><div class="progress flex-grow-1 me-3" style="height: 8px; border-radius: 10px; background: #eee;"><div class="progress-bar bg-warning" style="width: <?= $percentage ?>%; border-radius: 10px;"></div></div><span class="fw-bold text-dark small"><?= round($cr['avg_r'], 1) ?></span></div></td>
+                            </tr>
+                            <?php endwhile; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="totalQuizzesModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content border-0 shadow-lg animate__animated animate__zoomIn" style="border-radius: 25px;">
+            <div class="modal-header border-0 p-4">
+                <h5 class="fw-bold mb-0"><i class="fas fa-question-circle text-primary me-2"></i>All Quizzes (with instructor details)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4 pt-0">
+                <div class="table-responsive" style="max-height: 450px;">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Quiz</th>
+                                <th>Course</th>
+                                <th>Instructor</th>
+                                <th>Instructor Email</th>
+                                <th>Total Marks</th>
+                                <th>Status</th>
+                                <th>Created At</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php $quizIndex = 1; while($quiz = mysqli_fetch_assoc($quizzes_list)): ?>
+                            <tr class="animate__animated animate__fadeInUp">
+                                <td><?php echo $quizIndex++; ?></td>
+                                <td><?php echo htmlspecialchars($quiz['quiz_title']); ?></td>
+                                <td><?php echo htmlspecialchars($quiz['course_title'] ?? '-'); ?></td>
+                                <td><?php echo htmlspecialchars($quiz['instructor_name'] ?? 'Unknown'); ?></td>
+                                <td><?php echo htmlspecialchars($quiz['instructor_email'] ?? '-'); ?></td>
+                                <td><?php echo $quiz['total_marks']; ?></td>
+                                <td><?php echo ucfirst($quiz['status']); ?></td>
+                                <td><?php echo $quiz['created_at']; ?></td>
+                            </tr>
+                            <?php endwhile; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="quizAttemptsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content border-0 shadow-lg animate__animated animate__zoomIn" style="border-radius: 25px;">
+            <div class="modal-header border-0 p-4">
+                <h5 class="fw-bold mb-0"><i class="fas fa-history text-success me-2"></i>Quiz Attempts (with students details)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4 pt-0">
+                <div class="table-responsive" style="max-height: 450px;">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Student</th>
+                                <th>Email</th>
+                                <th>Enrollment Status</th>
+                                <th>Course</th>
+                                <th>Quiz</th>
+                                <th>Score</th>
+                                <th>Attempted At</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php $attemptIndex = 1; while($att = mysqli_fetch_assoc($quiz_attempts_list)): ?>
+                            <tr class="animate__animated animate__fadeInUp">
+                                <td><?php echo $attemptIndex++; ?></td>
+                                <td><?php echo htmlspecialchars($att['student_name'] ?? 'Unknown'); ?></td>
+                                <td><?php echo htmlspecialchars($att['student_email'] ?? '-'); ?></td>
+                                <td><?php echo ucfirst($att['enrollment_status'] ?? '-'); ?></td>
+                                <td><?php echo htmlspecialchars($att['course_title'] ?? '-'); ?></td>
+                                <td><?php echo htmlspecialchars($att['quiz_title'] ?? '-'); ?></td>
+                                <td><?php echo $att['score']; ?></td>
+                                <td><?php echo $att['attempted_at']; ?></td>
                             </tr>
                             <?php endwhile; ?>
                         </tbody>

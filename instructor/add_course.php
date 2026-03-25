@@ -28,6 +28,7 @@ if($edit_id) {
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         * { font-family: 'Poppins', sans-serif; }
         body { background-color: #f0f2f5; }
@@ -283,25 +284,31 @@ function addUnit() {
     });
 }
 
-function editUnitPrompt(id, oldTitle) {
-    let newTitle = prompt("Update Unit Title:", oldTitle);
-    if(newTitle && newTitle.trim() !== oldTitle) {
-        let formData = new FormData();
-        formData.append('update_unit', '1');
-        formData.append('unit_id', id);
-        formData.append('unit_title', newTitle.trim());
-
-        fetch('curriculum_logic_ajax.php', { method: 'POST', body: formData })
-        .then(r => r.json())
-        .then(data => {
-            if(data.success) {
-                document.getElementById('unit-title-text-' + id).textContent = data.unit_title;
-            } else {
-                alert('Error updating unit');
-            }
-        })
-        .catch(err => console.error(err));
-    }
+// Unit edit mate
+function editUnitPrompt(id) {
+    let currentTitle = document.getElementById('unit-title-text-' + id).textContent.trim();
+    Swal.fire({
+        title: 'Update Unit Title',
+        input: 'text',
+        inputValue: currentTitle,
+        showCancelButton: true,
+        confirmButtonText: 'Update'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            let formData = new FormData();
+            formData.append('update_unit', '1');
+            formData.append('unit_id', id);
+            formData.append('unit_title', result.value);
+            fetch('curriculum_logic_ajax.php', { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    document.getElementById('unit-title-text-' + id).textContent = data.unit_title;
+                    Swal.fire('Updated!', '', 'success');
+                }
+            });
+        }
+    });
 }
 
 function addLessonPrompt(unitId) {
@@ -323,15 +330,19 @@ function addLessonPrompt(unitId) {
     new bootstrap.Modal(document.getElementById('lessonModal')).show();
 }
 
-function editLessonPrompt(lessonId, title, type, url, unitId) {
+// Lesson edit mate
+function editLessonPrompt(lessonId, unitId) {
+    let fullText = document.getElementById('lesson-title-text-' + lessonId).textContent;
+    let title = fullText.substring(fullText.indexOf('] ') + 2);
+    let type = document.getElementById('lesson-type-val-' + lessonId).value;
+    let url = document.getElementById('lesson-url-val-' + lessonId).value;
+
     document.getElementById('modalTitle').textContent = "Edit Lesson";
-    document.getElementById('modal_unit_id').value = unitId || '';
+    document.getElementById('modal_unit_id').value = unitId;
     document.getElementById('modal_lesson_id').value = lessonId;
     document.getElementById('modal_lesson_title').value = title;
-    document.getElementById('modal_content_type').value = type || 'video';
-    document.getElementById('modal_lesson_url').value = url || '';
-    document.getElementById('modal_existing_url').value = url || '';
-    document.getElementById('modal_lesson_file').value = "";
+    document.getElementById('modal_content_type').value = type;
+    document.getElementById('modal_lesson_url').value = url;
     
     toggleInputType();
     new bootstrap.Modal(document.getElementById('lessonModal')).show();
@@ -455,23 +466,68 @@ function loadUnits(id) {
 }
 
 function publishNow() {
-    if(!current_course_id || !confirm("Publish this course?")) return;
+    if(!current_course_id) return;
     
-    let formData = new FormData();
-    formData.append('publish_course', '1');
-    formData.append('course_id', current_course_id);
+    Swal.fire({
+        title: 'Publish Course?',
+        text: "Are you sure you want to make this course live?",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, Publish!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            let formData = new FormData();
+            formData.append('publish_course', '1');
+            formData.append('course_id', current_course_id);
 
-    fetch('finalize_course_ajax.php', { method: 'POST', body: formData })
-    .then(r => r.json())
-    .then(data => {
-        if(data.success) {
-            alert("Course published successfully!");
-            window.location.href = "dashboard.php";
+            fetch('finalize_course_ajax.php', { method: 'POST', body: formData })
+            .then(r => r.json())
+            .then(data => {
+                if(data.success) {
+                    Swal.fire({
+                        title: 'Published!',
+                        text: 'Your course has been published successfully.',
+                        icon: 'success',
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        window.location.href = "dashboard.php";
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Publish Failed',
+                        text: data.message || 'Unknown error occurred.',
+                        icon: 'error'
+                    });
+                }
+            })
+            .catch(err => {
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Network error occurred while publishing.',
+                    icon: 'error'
+                });
+            });
         } else {
-            alert("Publish failed: " + (data.message || 'Unknown error'));
+            // User canceled publish, offer to save as draft
+            Swal.fire({
+                title: 'Save as Draft?',
+                text: 'Do you want to save this course as a draft?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Save as Draft',
+                cancelButtonText: 'No, Discard'
+            }).then((draftResult) => {
+                if (draftResult.isConfirmed) {
+                    // Since the course is already saved, just redirect to dashboard
+                    window.location.href = "dashboard.php";
+                }
+                // If no, do nothing, stay on page
+            });
         }
-    })
-    .catch(err => alert("Publish error"));
+    });
 }
 
 // Auto-load on page load
@@ -481,40 +537,76 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-function deleteunit(unitId){
-    if(!confirm("Are you sure you want to delete this unit? All lessons under it will also be deleted.")) return;
+// Unit Delete Function Update
+function deleteUnit(unitId) {
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "All related units and lessons will be permanently deleted!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Yes, Delete it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            let formData = new FormData();
+            formData.append('delete_unit', '1');
+            formData.append('unit_id', unitId);
 
-    let formData = new FormData();
-    formData.append('delete_unit', '1');
-    formData.append('unit_id', unitId);
-
-    fetch('curriculum_logic_ajax.php', { method: 'POST', body: formData })
-    .then(r => r.text())
-    .then(res => {
-        if (res.trim() === 'success') {
-            document.getElementById('unit-' + unitId).remove();
-        } else {
-            alert("Delete failed!");
+            // FIX: File path barabar check karo. 
+            // Jo tame curriculum_logic_ajax.php vapro cho toh e j lakho.
+            fetch('curriculum_logic_ajax.php', { 
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('File not found (404)');
+                }
+                return response.text();
+            })
+            .then(data => {
+                if (data.trim() === 'success') {
+                    document.getElementById('unit-' + unitId).remove();
+                    Swal.fire('Deleted!', 'Unit has been removed.', 'success');
+                } else {
+                    Swal.fire('Error!', 'Server error: ' + data, 'error');
+                }
+            })
+            .catch(error => {
+                // Have aya 404 error pakday jase
+                Swal.fire('404 Error!', 'The file curriculum_logic_ajax.php was not found on this server.', 'error');
+            });
         }
     });
 }
 
-function deleteLesson(lessonId){
-    if(!confirm("Are you sure you want to delete this lesson?")) return;
+// Lesson Delete Function Update
+function deleteLesson(lessonId) {
+    Swal.fire({
+        title: 'Delete Lesson?',
+        text: "Are you sure you want to delete this lesson? This action cannot be undone!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Yes, delete it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            let formData = new FormData();
+            formData.append('delete_lesson', '1');
+            formData.append('lesson_id', lessonId);
 
-    let formData = new FormData();
-    formData.append('delete_lesson', '1');
-    formData.append('lesson_id', lessonId);
-
-    fetch('curriculum_logic_ajax.php', { method: 'POST', body: formData })
-    .then(r => r.text())
-    .then(res => {
-        if (res.trim() === 'success') {
-            loadUnits(current_course_id);
-        } else {
-            alert("Delete failed!");
+            fetch('curriculum_logic_ajax.php', { method: 'POST', body: formData })
+            .then(r => r.text())
+            .then(res => {
+                if (res.trim() === 'success') {
+                    Swal.fire('Deleted!', 'Lesson removed.', 'success');
+                    loadUnits(current_course_id);
+                } else {
+                    Swal.fire('Error!', 'Delete failed!', 'error');
+                }
+            });
         }
-    });
+    })
 }
 </script>
 </body>

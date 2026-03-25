@@ -41,6 +41,8 @@ if (!$result) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         :root { --primary: #6c63ff; --dark: #1e1e2d; }
         body { 
@@ -211,11 +213,9 @@ if (!$result) {
                             <a href="add_course.php?edit_id=<?= $row['id'] ?>" class="action-btn btn-edit me-1" title="Edit">
                                 <i class="fas fa-pen"></i>
                             </a>
-                            <a href="delete_course.php?id=<?= $row['id'] ?>" 
-                                class="action-btn btn-del" 
-                                onclick="return confirm('Are you sure you want to delete this course? All related units and lessons will be lost!')">
-                                <i class="fas fa-trash"></i>
-                            </a>
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="confirmDelete(<?= $row['id'] ?>)">
+    <i class="fas fa-trash"></i>
+</button>
                         </div>
                     </div>
                 </div>
@@ -260,6 +260,38 @@ if (!$result) {
         // Initial load
         loadCourses();
     });
+    // Delete Confirmation Function
+function confirmDelete(courseId) {
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "This will delete the entire course, including all units and lessons!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ff4757',
+        confirmButtonText: 'Yes, Delete it!',
+        showClass: { popup: 'animate__animated animate__headShake' }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // AJAX request to your existing file
+            $.ajax({
+                url: 'MC_fetch_courses_ajax.php',
+                method: 'POST',
+                data: { 
+                    delete_course: 1, 
+                    course_id: courseId 
+                },
+                success: function(response) {
+                    if(response.trim() === 'success') {
+                        Swal.fire('Deleted!', 'Course has been removed.', 'success');
+                        loadCourses(); // List refresh karva mate
+                    } else {
+                        Swal.fire('Error!', 'Could not delete: ' + response, 'error');
+                    }
+                }
+            });
+        }
+    });
+}
 </script>
 </body>
 </html>

@@ -15,44 +15,47 @@ $user_id = $_SESSION['user_id'];
 $user_q = mysqli_query($conn, "SELECT * FROM users WHERE id = '$user_id'");
 $user = mysqli_fetch_assoc($user_q);
 
-// Enrollment Check
-$resume_q = mysqli_query($conn, "SELECT e.*, c.title, c.thumbnail FROM enrollments e 
-                                JOIN courses c ON e.course_id = c.id 
-                                WHERE e.student_id = '$user_id' ORDER BY e.enrolled_at DESC LIMIT 1");
-$resume_course = mysqli_fetch_assoc($resume_q);
-$enrollment_id = $resume_course['id'] ?? 0;
-
-// --- SMART RESUME LOGIC ---
-$resume_url = "javascript:void(0);"; 
-$has_enrollment = ($resume_course) ? true : false;
-
-if($has_enrollment) {
-    $c_id = $resume_course['course_id'];
-    
-    // 1. Find the first unit that has incomplete lessons
-    $find_unit_q = mysqli_query($conn, "SELECT u.id FROM units u 
-        WHERE u.course_id = '$c_id' 
-        AND u.id NOT IN (
-            SELECT l.unit_id FROM lessons l
-            JOIN lesson_progress lp ON l.id = lp.lesson_id
-            WHERE lp.enrollment_id = '$enrollment_id' AND lp.is_completed = 1
-            GROUP BY l.unit_id
-            HAVING COUNT(lp.id) = (SELECT COUNT(id) FROM lessons WHERE unit_id = l.unit_id)
-        )
-        ORDER BY u.order_no ASC LIMIT 1");
-
-    $unit_to_resume = mysqli_fetch_assoc($find_unit_q);
-    
-    if($unit_to_resume) {
-        $r_unit_id = $unit_to_resume['id'];
-        $resume_url = "watch.php?course_id=$c_id&unit_id=$r_unit_id";
-    } else {
-        // 2. If all completed, go to first unit
-        $first_unit_q = mysqli_query($conn, "SELECT id FROM units WHERE course_id = '$c_id' ORDER BY order_no ASC LIMIT 1");
-        $first_unit = mysqli_fetch_assoc($first_unit_q);
-        $r_unit_id = $first_unit['id'] ?? 0;
-        $resume_url = "watch.php?course_id=$c_id&unit_id=$r_unit_id";
+function getResumeUrl($conn, $course_id, $enrollment_id) {
+    $units_q = mysqli_query($conn, "SELECT * FROM units WHERE course_id = '$course_id' ORDER BY order_no ASC");
+    $units = [];
+    while($u = mysqli_fetch_assoc($units_q)) {
+        $units[] = $u;
     }
+
+    foreach($units as $u) {
+        // check if all previous are completed
+        $all_prev_completed = true;
+        foreach($units as $prev_u) {
+            if($prev_u['order_no'] >= $u['order_no']) break;
+            $total_l_q = mysqli_query($conn, "SELECT COUNT(id) as total FROM lessons WHERE unit_id = '{$prev_u['id']}'");
+            $total_l = mysqli_fetch_assoc($total_l_q)['total'] ?? 0;
+            $done_l_q = mysqli_query($conn, "SELECT COUNT(lp.id) as done FROM lesson_progress lp 
+                                             JOIN lessons l ON lp.lesson_id = l.id 
+                                             WHERE lp.enrollment_id = '$enrollment_id' 
+                                             AND l.unit_id = '{$prev_u['id']}' AND lp.is_completed = 1");
+            $done_l = mysqli_fetch_assoc($done_l_q)['done'] ?? 0;
+            if($done_l < $total_l) {
+                $all_prev_completed = false;
+                break;
+            }
+        }
+        if($all_prev_completed) {
+            // check if this unit has incomplete lessons
+            $total_l_q = mysqli_query($conn, "SELECT COUNT(id) as total FROM lessons WHERE unit_id = '{$u['id']}'");
+            $total_l = mysqli_fetch_assoc($total_l_q)['total'] ?? 0;
+            $done_l_q = mysqli_query($conn, "SELECT COUNT(lp.id) as done FROM lesson_progress lp 
+                                             JOIN lessons l ON lp.lesson_id = l.id 
+                                             WHERE lp.enrollment_id = '$enrollment_id' 
+                                             AND l.unit_id = '{$u['id']}' AND lp.is_completed = 1");
+            $done_l = mysqli_fetch_assoc($done_l_q)['done'] ?? 0;
+            if($done_l < $total_l) {
+                return "watch.php?course_id=$course_id&unit_id=" . $u['id'];
+            }
+        }
+    }
+    // if none, go to first unit
+    $first = $units[0] ?? null;
+    return "watch.php?course_id=$course_id&unit_id=" . ($first['id'] ?? 0);
 }
 
 function getCourseProgress($conn, $enrollment_id, $course_id) {
@@ -69,7 +72,17 @@ function getCourseProgress($conn, $enrollment_id, $course_id) {
     return round(($done / $total) * 100);
 }
 
-$current_progress = $resume_course ? getCourseProgress($conn, $enrollment_id, $resume_course['course_id']) : 0;
+$enrolled_courses_q = mysqli_query($conn, "SELECT e.*, c.title, c.thumbnail, c.id as course_id FROM enrollments e 
+                                JOIN courses c ON e.course_id = c.id 
+                                WHERE e.student_id = '$user_id' ORDER BY e.enrolled_at DESC");
+$enrolled_courses = [];
+while($row = mysqli_fetch_assoc($enrolled_courses_q)) {
+    $c_id = $row['course_id'];
+    $e_id = $row['id'];
+    $row['resume_url'] = getResumeUrl($conn, $c_id, $e_id);
+    $row['progress'] = getCourseProgress($conn, $e_id, $c_id);
+    $enrolled_courses[] = $row;
+}
 ?>
 
 <!DOCTYPE html>
@@ -139,29 +152,76 @@ $current_progress = $resume_course ? getCourseProgress($conn, $enrollment_id, $r
         </div>
     </header>
 
-    <?php if($resume_course): ?>
+    <?php if(!empty($enrolled_courses) && count($enrolled_courses) > 1): ?>
+    <div class="alert alert-info alert-dismissible d-flex align-items-center mb-4" style="border-radius: 15px; background: rgba(13, 110, 253, 0.1); border: 1px solid rgba(13, 110, 253, 0.2);" role="alert">
+        <i class="fas fa-info-circle text-primary me-2"></i>
+        <span class="text-primary fw-bold">Click dots below to switch between your enrolled courses</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <?php endif; ?>
+
+    <?php if(!empty($enrolled_courses)): ?>
     <section class="mb-5" data-aos="fade-up">
+        <?php if(count($enrolled_courses) == 1): 
+            $c = $enrolled_courses[0];
+        ?>
         <div class="resume-card shadow-lg">
-            <img src="../uploads/thumbnails/<?= $resume_course['thumbnail'] ?>" alt="Course Thumbnail">
+            <img src="../uploads/thumbnails/<?= $c['thumbnail'] ?>" alt="Course Thumbnail">
             <div class="position-relative" style="z-index: 2;">
                 <span class="badge bg-white text-primary mb-3 px-3 py-2 rounded-pill fw-bold">RESUME LEARNING</span>
-                <h1 class="fw-bold mb-3"><?= $resume_course['title'] ?></h1>
+                <h1 class="fw-bold mb-3"><?= $c['title'] ?></h1>
                 
                 <div class="col-md-5 mb-4">
                     <div class="d-flex justify-content-between mb-2 small fw-bold">
                         <span>Course Progress</span>
-                        <span><?= $current_progress ?>% Complete</span>
+                        <span><?= $c['progress'] ?>% Complete</span>
                     </div>
                     <div class="progress shadow-sm">
-                        <div class="progress-bar bg-white rounded-pill animate__animated animate__slideInLeft" style="width: <?= $current_progress ?>%"></div>
+                        <div class="progress-bar bg-white rounded-pill animate__animated animate__slideInLeft" style="width: <?= $c['progress'] ?>%"></div>
                     </div>
                 </div>
                 
-                <a href="<?= $resume_url ?>" onclick="<?= !$has_enrollment ? 'noResumeAlert()' : '' ?>" class="btn btn-light btn-lg rounded-pill px-5 fw-bold text-primary shadow hover-up">
+                <a href="<?= $c['resume_url'] ?>" class="btn btn-light btn-lg rounded-pill px-5 fw-bold text-primary shadow hover-up">
                     Continue Watching <i class="fas fa-arrow-right ms-2"></i>
                 </a>
             </div>
         </div>
+        <?php else: ?>
+        <div id="coursesCarousel" class="carousel slide">
+            <div class="carousel-indicators">
+                <?php foreach($enrolled_courses as $index => $c): ?>
+                <button type="button" data-bs-target="#coursesCarousel" data-bs-slide-to="<?php echo $index; ?>" class="<?php if($index==0) echo 'active'; ?>" aria-label="Slide <?php echo $index+1; ?>"></button>
+                <?php endforeach; ?>
+            </div>
+            <div class="carousel-inner">
+                <?php foreach($enrolled_courses as $index => $c): ?>
+                <div class="carousel-item <?php if($index==0) echo 'active'; ?>" data-course-id="<?php echo $c['course_id']; ?>">
+                    <div class="resume-card shadow-lg">
+                        <img src="../uploads/thumbnails/<?= $c['thumbnail'] ?>" alt="Course Thumbnail">
+                        <div class="position-relative" style="z-index: 2;">
+                            <span class="badge bg-white text-primary mb-3 px-3 py-2 rounded-pill fw-bold">RESUME LEARNING</span>
+                            <h1 class="fw-bold mb-3"><?= $c['title'] ?></h1>
+                            
+                            <div class="col-md-5 mb-4">
+                                <div class="d-flex justify-content-between mb-2 small fw-bold">
+                                    <span>Course Progress</span>
+                                    <span><?= $c['progress'] ?>% Complete</span>
+                                </div>
+                                <div class="progress shadow-sm">
+                                    <div class="progress-bar bg-white rounded-pill animate__animated animate__slideInLeft" style="width: <?= $c['progress'] ?>%"></div>
+                                </div>
+                            </div>
+                            
+                            <a href="<?= $c['resume_url'] ?>" class="btn btn-light btn-lg rounded-pill px-5 fw-bold text-primary shadow hover-up">
+                                Continue Watching <i class="fas fa-arrow-right ms-2"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
     </section>
     <?php endif; ?>
 
@@ -171,126 +231,122 @@ $current_progress = $resume_course ? getCourseProgress($conn, $enrollment_id, $r
             <span class="badge bg-primary-soft text-primary px-3 py-2 rounded-pill" style="background: rgba(67, 24, 255, 0.1);">Step-by-step Learning</span>
         </div>
 
-        <div class="row g-4">
-            <?php 
-            if($resume_course) {
-                $c_id = $resume_course['course_id'];
-                $units_q = mysqli_query($conn, "SELECT * FROM units WHERE course_id = '$c_id' ORDER BY order_no ASC");
-                $prev_unit_completed = true; 
-
-                while($u = mysqli_fetch_assoc($units_q)): 
-                    $u_id = $u['id'];
-                    $total_l_q = mysqli_query($conn, "SELECT COUNT(id) as total FROM lessons WHERE unit_id = '$u_id'");
-                    $total_l = mysqli_fetch_assoc($total_l_q)['total'] ?? 0;
-
-                    $done_l_q = mysqli_query($conn, "SELECT COUNT(lp.id) as done FROM lesson_progress lp 
-                                                    JOIN lessons l ON lp.lesson_id = l.id 
-                                                    WHERE lp.enrollment_id = '$enrollment_id' 
-                                                    AND l.unit_id = '$u_id' AND lp.is_completed = 1");
-                    $done_l = mysqli_fetch_assoc($done_l_q)['done'] ?? 0;
-
-                    $isDone = ($total_l > 0 && $total_l == $done_l);
-                    $isLocked = !$prev_unit_completed;
-            ?>
-            <div class="col-md-6" data-aos="zoom-in-up">
-                <div class="card unit-box p-4 shadow-sm <?= $isLocked ? 'unit-locked' : '' ?>">
-                    <?php if($isLocked): ?> 
-                        <div class="position-absolute top-0 end-0 m-3 text-muted"><i class="fas fa-lock"></i></div>
-                    <?php endif; ?>
-                    
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="rounded-circle p-3 me-3 shadow-sm <?= $isDone ? 'bg-success text-white' : ($isLocked ? 'bg-secondary text-white' : 'bg-primary text-white') ?>" style="width: 55px; height: 55px; display: flex; align-items: center; justify-content: center;">
-                            <i class="fas <?= $isDone ? 'fa-check' : 'fa-play' ?>"></i>
-                        </div>
-                        <div><h5 class="fw-bold mb-0"><?= $u['unit_title'] ?></h5></div>
-                    </div>
-                    
-                    <div class="mt-2">
-                        <?php if($isDone): ?>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div class="alert alert-success py-2 px-3 border-0 rounded-pill mb-0 small">
-                                    <i class="fas fa-medal me-1"></i> Completed!
+        <div id="curriculum-container">
+            <?php if(!empty($enrolled_courses)): ?>
+                <?php foreach($enrolled_courses as $index => $c): ?>
+                <div class="curriculum-section" data-course-id="<?php echo $c['course_id']; ?>" style="display: <?php echo $index==0 ? 'block' : 'none'; ?>;">
+                    <div class="row g-4">
+                        <?php 
+                        $c_id = $c['course_id'];
+                        $enrollment_id = $c['id'];
+                        $units_q = mysqli_query($conn, "SELECT * FROM units WHERE course_id = '$c_id' ORDER BY order_no ASC");
+                        $prev_unit_completed = true; 
+                        while($u = mysqli_fetch_assoc($units_q)): 
+                            $u_id = $u['id'];
+                            $total_l_q = mysqli_query($conn, "SELECT COUNT(id) as total FROM lessons WHERE unit_id = '$u_id'");
+                            $total_l = mysqli_fetch_assoc($total_l_q)['total'] ?? 0;
+                            $done_l_q = mysqli_query($conn, "SELECT COUNT(lp.id) as done FROM lesson_progress lp 
+                                                            JOIN lessons l ON lp.lesson_id = l.id 
+                                                            WHERE lp.enrollment_id = '$enrollment_id' 
+                                                            AND l.unit_id = '$u_id' AND lp.is_completed = 1");
+                            $done_l = mysqli_fetch_assoc($done_l_q)['done'] ?? 0;
+                            $isDone = ($total_l > 0 && $total_l == $done_l);
+                            $isLocked = !$prev_unit_completed;
+                        ?>
+                        <div class="col-md-6" data-aos="zoom-in-up">
+                            <div class="card unit-box p-4 shadow-sm <?= $isLocked ? 'unit-locked' : '' ?>">
+                                <?php if($isLocked): ?> 
+                                    <div class="position-absolute top-0 end-0 m-3 text-muted"><i class="fas fa-lock"></i></div>
+                                <?php endif; ?>
+                                
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="rounded-circle p-3 me-3 shadow-sm <?= $isDone ? 'bg-success text-white' : ($isLocked ? 'bg-secondary text-white' : 'bg-primary text-white') ?>" style="width: 55px; height: 55px; display: flex; align-items: center; justify-content: center;">
+                                        <i class="fas <?= $isDone ? 'fa-check' : 'fa-play' ?>"></i>
+                                    </div>
+                                    <div><h5 class="fw-bold mb-0"><?= $u['unit_title'] ?></h5></div>
                                 </div>
-                                <a href="watch.php?course_id=<?= $c_id ?>&unit_id=<?= $u_id ?>" class="btn btn-sm btn-outline-success rounded-pill px-4 fw-bold">
-                                    Review Lessons <i class="fas fa-redo ms-1" style="font-size: 0.8rem;"></i>
-                                </a>
+                                
+                                <div class="mt-2">
+                                    <?php if($isDone): ?>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div class="alert alert-success py-2 px-3 border-0 rounded-pill mb-0 small">
+                                                <i class="fas fa-medal me-1"></i> Completed!
+                                            </div>
+                                            <a href="watch.php?course_id=<?= $c_id ?>&unit_id=<?= $u_id ?>" class="btn btn-sm btn-outline-success rounded-pill px-4 fw-bold">
+                                                Review Lessons <i class="fas fa-redo ms-1" style="font-size: 0.8rem;"></i>
+                                            </a>
+                                        </div>
+                                    <?php elseif($isLocked): ?>
+                                        <p class="text-muted small mb-0"><i class="fas fa-info-circle me-1"></i> Finish previous unit to unlock.</p>
+                                    <?php else: ?>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div class="text-primary small fw-bold"><i class="fas fa-tasks me-1"></i> <?= $done_l ?> / <?= $total_l ?> Done</div>
+                                            <a href="watch.php?course_id=<?= $c_id ?>&unit_id=<?= $u_id ?>" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm fw-bold">Start Learning</a>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
                             </div>
-                        <?php elseif($isLocked): ?>
-                            <p class="text-muted small mb-0"><i class="fas fa-info-circle me-1"></i> Finish previous unit to unlock.</p>
-                        <?php else: ?>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div class="text-primary small fw-bold"><i class="fas fa-tasks me-1"></i> <?= $done_l ?> / <?= $total_l ?> Done</div>
-                                <a href="watch.php?course_id=<?= $c_id ?>&unit_id=<?= $u_id ?>" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm fw-bold">Start Learning</a>
-                            </div>
-                        <?php endif; ?>
+                        </div>
+                        <?php 
+                            $prev_unit_completed = $isDone; 
+                            endwhile; 
+                        ?>
                     </div>
+                    <?php if($c['progress'] == 100): 
+                        // check review
+                        $rev_check_q = mysqli_query($conn, "SELECT id FROM reviews WHERE course_id = '$c_id' AND user_id = '$user_id'");
+                        if(mysqli_num_rows($rev_check_q) == 0):
+                    ?>
+                    <div class="mt-3 animate__animated animate__bounceInUp">
+                        <div class="card border-0 shadow-lg p-4 text-center" style="border-radius: 30px; background: #fff;">
+                            <div class="mb-3">
+                                <span class="badge bg-success-soft text-success px-4 py-2 rounded-pill" style="background: rgba(25, 135, 84, 0.1);">
+                                    🎉 CONGRATULATIONS!
+                                </span>
+                            </div>
+                            <h3 class="fw-bold">You've Completed the Course!</h3>
+                            <p class="text-muted">How was your learning experience with LearnsDecode? Your feedback helps us grow.</p>
+                            
+                            <form class="ratingForm mt-3" data-course-id="<?php echo $c_id; ?>">
+                                <input type="hidden" name="course_id" value="<?php echo $c_id; ?>">
+                                
+                                <div class="star-rating-wrapper mb-3">
+                                    <div class="star-rating">
+                                        <input type="radio" id="star-5-<?php echo $c_id; ?>" name="rating" value="5" required /><label for="star-5-<?php echo $c_id; ?>" class="fas fa-star"></label>
+                                        <input type="radio" id="star-4-<?php echo $c_id; ?>" name="rating" value="4" /><label for="star-4-<?php echo $c_id; ?>" class="fas fa-star"></label>
+                                        <input type="radio" id="star-3-<?php echo $c_id; ?>" name="rating" value="3" /><label for="star-3-<?php echo $c_id; ?>" class="fas fa-star"></label>
+                                        <input type="radio" id="star-2-<?php echo $c_id; ?>" name="rating" value="2" /><label for="star-2-<?php echo $c_id; ?>" class="fas fa-star"></label>
+                                        <input type="radio" id="star-1-<?php echo $c_id; ?>" name="rating" value="1" /><label for="star-1-<?php echo $c_id; ?>" class="fas fa-star"></label>
+                                    </div>
+                                </div>
+                                <div class="col-md-8 mx-auto mb-4">
+                                    <textarea name="comment" class="form-control border-0 bg-light p-3" rows="3" placeholder="Share your thoughts about this course..." style="border-radius: 15px;"></textarea>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary rounded-pill px-5 py-2 fw-bold shadow-sm hover-up">
+                                    Submit Review <i class="fas fa-paper-plane ms-2"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    <style>
+                        .star-rating { direction: rtl; display: inline-block; }
+                        .star-rating input { display: none; }
+                        .star-rating label { color: #e9edf7; font-size: 2.5rem; cursor: pointer; transition: 0.3s; padding: 0 5px; }
+                        .star-rating label:hover, .star-rating label:hover ~ label, .star-rating input:checked ~ label { color: #ffc107; transform: scale(1.1); }
+                    </style>
+                    <?php endif; endif; ?>
                 </div>
-            </div>
-            <?php 
-                $prev_unit_completed = $isDone; 
-                endwhile; 
-            } else {
-                echo "<div class='col-12 text-center py-5'>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div class="row g-4">
+                    <div class='col-12 text-center py-5'>
                         <h5 class='fw-bold'>No Active Courses Found</h5>
                         <a href='../index.php' class='btn btn-primary rounded-pill mt-3'>Explore Courses</a>
-                      </div>";
-            }
-            ?>
-        </div>
-
-        <?php if($resume_course && $current_progress == 100): 
-            
-            // 1. Check if user already reviewed this course
-        $c_id = $resume_course['course_id'];
-        $user_id = $_SESSION['user_id'];
-        $rev_check_q = mysqli_query($conn, "SELECT id FROM reviews WHERE course_id = '$c_id' AND user_id = '$user_id'");
-        
-        // 2. Card tyare j dekhadvo jyare review na apyo hoy
-        if(mysqli_num_rows($rev_check_q) == 0):
-            
-            ?>
-    <section class="mb-5 mt-3 animate__animated animate__bounceInUp">
-        <div class="card border-0 shadow-lg p-4 text-center" style="border-radius: 30px; background: #fff;">
-            <div class="mb-3">
-                <span class="badge bg-success-soft text-success px-4 py-2 rounded-pill" style="background: rgba(25, 135, 84, 0.1);">
-                    🎉 CONGRATULATIONS!
-                </span>
-            </div>
-            <h3 class="fw-bold">You've Completed the Course!</h3>
-            <p class="text-muted">How was your learning experience with LearnsDecode? Your feedback helps us grow.</p>
-            
-            <form id="ratingForm" class="mt-3">
-                <input type="hidden" name="course_id" value="<?= $resume_course['course_id'] ?>">
-                
-                <div class="star-rating-wrapper mb-3">
-                    <div class="star-rating">
-                        <input type="radio" id="star-5" name="rating" value="5" required /><label for="star-5" class="fas fa-star"></label>
-                        <input type="radio" id="star-4" name="rating" value="4" /><label for="star-4" class="fas fa-star"></label>
-                        <input type="radio" id="star-3" name="rating" value="3" /><label for="star-3" class="fas fa-star"></label>
-                        <input type="radio" id="star-2" name="rating" value="2" /><label for="star-2" class="fas fa-star"></label>
-                        <input type="radio" id="star-1" name="rating" value="1" /><label for="star-1" class="fas fa-star"></label>
                     </div>
                 </div>
-
-                <div class="col-md-8 mx-auto mb-4">
-                    <textarea name="comment" class="form-control border-0 bg-light p-3" rows="3" placeholder="Share your thoughts about this course..." style="border-radius: 15px;"></textarea>
-                </div>
-                
-                <button type="submit" class="btn btn-primary rounded-pill px-5 py-2 fw-bold shadow-sm hover-up">
-                    Submit Review <i class="fas fa-paper-plane ms-2"></i>
-                </button>
-            </form>
+            <?php endif; ?>
         </div>
-    </section>
-
-    <style>
-        .star-rating { direction: rtl; display: inline-block; }
-        .star-rating input { display: none; }
-        .star-rating label { color: #e9edf7; font-size: 2.5rem; cursor: pointer; transition: 0.3s; padding: 0 5px; }
-        .star-rating label:hover, .star-rating label:hover ~ label, .star-rating input:checked ~ label { color: #ffc107; transform: scale(1.1); }
-    </style>
-    <?php endif; 
-    endif; ?>
     </section>
 </div>
 
@@ -298,15 +354,6 @@ $current_progress = $resume_course ? getCourseProgress($conn, $enrollment_id, $r
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     AOS.init({ duration: 800, once: true });
-
-    function noResumeAlert() {
-        Swal.fire({
-            title: 'No Active Course! 🔍',
-            text: 'Your feedback is saved successfully !',
-            icon: 'info',
-            confirmButtonColor: '#4318ff'
-        });
-    }
 
     const urlParams = new URLSearchParams(window.location.search);
     if(urlParams.get('order') === 'success') {
@@ -316,12 +363,10 @@ $current_progress = $resume_course ? getCourseProgress($conn, $enrollment_id, $r
 
 <script>
 // --- RATING SUBMISSION WORKFLOW ---
-const ratingForm = document.getElementById('ratingForm');
-if(ratingForm) {
-    ratingForm.addEventListener('submit', function(e) {
+document.querySelectorAll('.ratingForm').forEach(form => {
+    form.addEventListener('submit', function(e) {
         e.preventDefault();
         const formData = new FormData(this);
-
         fetch('save_review.php', {
             method: 'POST',
             body: formData
@@ -331,7 +376,7 @@ if(ratingForm) {
             if(data.status === 'success') {
                 Swal.fire({
                     title: 'Thank You! 🌟',
-                    text: 'Tamari rating successfully save thai gai che.',
+                    text: 'Rating submitted successfully.',
                     icon: 'success',
                     confirmButtonColor: '#4318ff'
                 }).then(() => location.reload());
@@ -340,7 +385,18 @@ if(ratingForm) {
             }
         });
     });
-}
+});
+
+// Carousel event to switch curriculum
+document.getElementById('coursesCarousel')?.addEventListener('slid.bs.carousel', function (event) {
+    const activeItem = event.relatedTarget;
+    const courseId = activeItem.getAttribute('data-course-id');
+    // hide all curriculum sections
+    document.querySelectorAll('.curriculum-section').forEach(sec => sec.style.display = 'none');
+    // show the one for courseId
+    document.querySelector(`.curriculum-section[data-course-id="${courseId}"]`).style.display = 'block';
+});
 </script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

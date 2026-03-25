@@ -87,10 +87,10 @@ $user = mysqli_fetch_assoc($u_result);
                             <i class="fas fa-credit-card me-2 text-primary"></i> Credit / Debit Card
                         </label>
                         <div id="card-input" class="mt-3 d-none animate__animated animate__fadeIn">
-                            <input type="text" class="form-control mb-2 border-0 bg-light" placeholder="Card Number (XXXX XXXX XXXX XXXX)">
+                            <input type="text" id="card_number" class="form-control mb-2 border-0 bg-light" placeholder="Card Number (XXXX XXXX XXXX XXXX)">
                             <div class="row g-2">
-                                <div class="col-6"><input type="text" class="form-control border-0 bg-light" placeholder="MM/YY"></div>
-                                <div class="col-6"><input type="password" class="form-control border-0 bg-light" placeholder="CVV"></div>
+                                <div class="col-6"><input type="text" id="expiry" class="form-control border-0 bg-light" placeholder="MM/YY"></div>
+                                <div class="col-6"><input type="password" id="cvv" class="form-control border-0 bg-light" placeholder="CVV"></div>
                             </div>
                         </div>
                     </div>
@@ -138,10 +138,33 @@ $user = mysqli_fetch_assoc($u_result);
     }
 
     function processCheckout() {
-        const phone = document.getElementById('phone').value;
-        if(phone.length < 10) {
-            Swal.fire({ icon: 'error', title: 'Oops...', text: 'Please enter a valid phone number !' });
+        const phone = document.getElementById('phone').value.trim();
+        if(!/^[0-9]{10}$/.test(phone)) {
+            Swal.fire({ icon: 'error', title: 'Oops...', text: 'Please enter a valid 10-digit phone number.' });
             return;
+        }
+
+        const payMethod = document.querySelector('input[name="pay_method"]:checked').value;
+
+        if(payMethod === 'card') {
+            const cardNumber = document.getElementById('card_number').value.replace(/\s+/g, '');
+            const expiry = document.getElementById('expiry').value.trim();
+            const cvv = document.getElementById('cvv').value.trim();
+
+            if(!/^[0-9]{16}$/.test(cardNumber)) {
+                Swal.fire({ icon: 'error', title: 'Invalid Card', text: 'Please enter a valid 16-digit card number.' });
+                return;
+            }
+
+            if(!/^(0[1-9]|1[0-2])\/[0-9]{2}$/.test(expiry)) {
+                Swal.fire({ icon: 'error', title: 'Invalid Expiry', text: 'Expiry should be in MM/YY format.' });
+                return;
+            }
+
+            if(!/^[0-9]{3,4}$/.test(cvv)) {
+                Swal.fire({ icon: 'error', title: 'Invalid CVV', text: 'Please enter a valid CVV (3-4 digits).' });
+                return;
+            }
         }
 
         Swal.fire({

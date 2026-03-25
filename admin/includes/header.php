@@ -30,6 +30,8 @@ $admin_email = $_SESSION['user_email'];
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         :root {
             --sidebar-width: 280px;
@@ -83,7 +85,9 @@ $admin_email = $_SESSION['user_email'];
         <a href="certified_students.php" class="<?= basename($_SERVER['PHP_SELF']) == 'certified_students.php' ? 'active' : '' ?>"><i class="fas fa-certificate"></i> Certified Students</a>
         <hr style="border-color: rgba(255,255,255,0.1)">
         <a href="profile.php" class="<?= basename($_SERVER['PHP_SELF']) == 'profile.php' ? 'active' : '' ?>"><i class="fas fa-user-circle"></i> Profile</a>
-        <a href="<?= defined('BASE_URL') ? BASE_URL : '' ?>/logout.php" class="text-danger" onclick="return confirm('Are you sure you want to logout?')"><i class="fas fa-power-off"></i> Logout</a>
+        <a href="javascript:void(0);" class="text-danger" onclick="confirmLogout()">
+            <i class="fas fa-power-off"></i> Logout
+        </a>
     </div>
 </nav>
 
@@ -100,3 +104,30 @@ $admin_email = $_SESSION['user_email'];
             <img src="https://ui-avatars.com/api/?name=<?= urlencode($admin_name) ?>&background=6c63ff&color=fff" class="rounded-circle shadow-sm border" width="45" height="45" style="object-fit: cover;">
         </div>
     </nav>
+<script>
+function confirmLogout() {
+    Swal.fire({
+        title: 'Admin Logout',
+        text: "Are you sure you want to exit the Admin Panel?",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#6c63ff', // LearnsDecode Primary Color
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, Logout',
+        cancelButtonText: 'Cancel',
+        background: '#1e1e2d', // Sidebar na dark theme sathe match thase
+        color: '#fff',         // Text color white rakhyo che dark theme mate
+        borderRadius: '15px'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = '<?= defined('BASE_URL') ? BASE_URL : '' ?>/logout.php';
+        }
+    });
+}
+
+// Sidebar toggle mate jo script baki hoy toh:
+document.getElementById('sidebarCollapse').onclick = function() {
+    document.getElementById('sidebar').classList.toggle('active');
+    document.getElementById('content').classList.toggle('active');
+};
+</script>

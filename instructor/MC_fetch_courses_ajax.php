@@ -12,6 +12,64 @@ if(!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'instructor'){
     exit();
 }
 
+if (isset($_POST['delete_course'])) {
+    $course_id = (int)$_POST['course_id'];
+
+    // 1. FIRST: Delete all Broadcast Messages from Inbox
+    mysqli_query($conn, "DELETE FROM inbox_messages WHERE course_id = $course_id");
+
+    // 2. DELETE QUIZ OPTIONS
+    $del_options = "DELETE qo FROM quiz_options qo 
+                    JOIN quiz_questions qq ON qo.question_id = qq.id 
+                    JOIN quizzes q ON qq.quiz_id = q.id 
+                    WHERE q.course_id = $course_id";
+    mysqli_query($conn, $del_options);
+
+    // 3. DELETE QUIZ ATTEMPTS
+    $del_quiz_attempts = "DELETE qa FROM quiz_attempts qa 
+                          JOIN enrollments e ON qa.enrollment_id = e.id 
+                          WHERE e.course_id = $course_id";
+    mysqli_query($conn, $del_quiz_attempts);
+
+    // 4. DELETE QUIZ QUESTIONS
+    $del_quiz_questions = "DELETE qq FROM quiz_questions qq 
+                           JOIN quizzes q ON qq.quiz_id = q.id 
+                           WHERE q.course_id = $course_id";
+    mysqli_query($conn, $del_quiz_questions);
+
+    // 5. DELETE QUIZZES
+    mysqli_query($conn, "DELETE FROM quizzes WHERE course_id = $course_id");
+
+    // 6. DELETE ENROLLMENTS
+    mysqli_query($conn, "DELETE FROM enrollments WHERE course_id = $course_id");
+
+    // 7. DELETE LESSON PROGRESS
+    $del_progress = "DELETE lp FROM lesson_progress lp 
+                     JOIN lessons l ON lp.lesson_id = l.id 
+                     JOIN units u ON l.unit_id = u.id 
+                     WHERE u.course_id = $course_id";
+    mysqli_query($conn, $del_progress);
+
+    // 8. DELETE LESSONS
+    $del_lessons = "DELETE l FROM lessons l 
+                    JOIN units u ON l.unit_id = u.id 
+                    WHERE u.course_id = $course_id";
+    mysqli_query($conn, $del_lessons);
+
+    // 9. DELETE UNITS
+    mysqli_query($conn, "DELETE FROM units WHERE course_id = $course_id");
+
+    // 10. FINALLY: DELETE THE MAIN COURSE
+    $query = "DELETE FROM courses WHERE id = $course_id";
+    
+    if (mysqli_query($conn, $query)) {
+        echo 'success';
+    } else {
+        echo 'error: ' . mysqli_error($conn);
+    }
+    exit;
+}
+
 $uid = $_SESSION['user_id'];
 $search = isset($_POST['search']) ? mysqli_real_escape_string($conn, $_POST['search']) : '';
 $status_filter = isset($_POST['status']) ? mysqli_real_escape_string($conn, $_POST['status']) : 'All';
@@ -73,7 +131,9 @@ if(mysqli_num_rows($result) > 0){
                     <a href="add_course.php?edit_id=<?= $row['id'] ?>" class="action-btn btn-edit" title="Edit">
                         <i class="fas fa-pen"></i>
                     </a>
-                    <a href="delete_course.php?id=<?= $row['id'] ?>" class="action-btn btn-del" onclick="return confirm('Are you sure you want to delete this course?')" title="Delete">
+                    <a href="javascript:void(0);" 
+                    class="action-btn btn-del" 
+                    onclick="confirmDelete(<?= $row['id'] ?>)">
                         <i class="fas fa-trash"></i>
                     </a>
                 </div>

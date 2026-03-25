@@ -8,15 +8,21 @@ $req_id = $_GET['request_id'] ?? null;
 if(!$req_id) die("Invalid Request");
 
 // Fetch Student & Course Details
-$query = "SELECT r.*, u.name as student_name, c.title as course_title 
+$query = "SELECT r.*, u.name as student_name, c.title as course_title, i.name as instructor_name 
         FROM certificate_requests r 
         JOIN users u ON r.student_id = u.id 
         JOIN courses c ON r.course_id = c.id 
+        JOIN users i ON c.instructor_id = i.id 
         WHERE r.id = '$req_id'";
 $res = mysqli_query($conn, $query);
 $data = mysqli_fetch_assoc($res);
 
 if(!$data) die("Request Not Found");
+
+$instructorName = htmlspecialchars($data['instructor_name'] ?? 'Instructor');
+$studentName = htmlspecialchars($data['student_name'] ?? 'Student');
+$courseTitle = htmlspecialchars($data['course_title'] ?? 'Course');
+$issueDate = date('d M, Y');
 
 $options = new Options();
 $options->set('isRemoteEnabled', true); // For loading images/online fonts
@@ -116,6 +122,32 @@ $html = "
         margin: 0 5%;
     }
 
+    .sign-script {
+        font-family: 'Great Vibes', cursive;
+        font-size: 32px;
+        color: #2b3674;
+        margin: 8px 0 4px;
+        text-shadow: 0 1px 1px rgba(0,0,0,0.15);
+    }
+
+    .sig-caption {
+        font-size: 14px;
+        color: #8490b2;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+    }
+
+    .sig-block {
+        display: inline-block;
+        width: 30%;
+        text-align: center;
+        margin: 0 5%;
+    }
+
+    .center-block {
+        width: 20%;
+    }
+
     .sig-line {
         border-top: 2px solid #e9edf7;
         margin-top: 10px;
@@ -146,23 +178,26 @@ $html = "
             <div class='sub-title'>COMPLETION AWARD</div>
             
             <p class='student-label'>This certificate is proudly presented to</p>
-            <div class='student-name'>{$data['student_name']}</div>
+            <div class='student-name'>{$studentName}</div>
             
             <p class='course-info'>
                 for successfully completing the advanced training in <br>
-                <span class='course-name'>\"{$data['course_title']}\"</span> <br>
-                on this day, " . date('d M, Y') . "
+                <span class='course-name'>{$courseTitle}</span> <br>
+                on this day, {$issueDate}
             </p>
 
             <div class='footer'>
                 <div class='sig-block'>
-                    <div class='sig-line'>Course Instructor</div>
+                    <div class='sign-script'>{$instructorName}</div>
+                    <div class='sig-caption'>Course Instructor</div>
                 </div>
-                <div class='sig-block'>
+                <div class='sig-block center-block'>
                     <img src='https://cdn-icons-png.flaticon.com/512/190/190411.png' class='badge-icon'>
+                    <div class='sig-caption'>Official Seal</div>
                 </div>
                 <div class='sig-block'>
-                    <div class='sig-line'>Platform Director</div>
+                    <div class='sign-script'>John</div>
+                    <div class='sig-caption'>Platform Director</div>
                 </div>
             </div>
         </div>

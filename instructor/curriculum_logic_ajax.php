@@ -4,7 +4,6 @@ ini_set('display_errors', 0); // એરરને છુપાવો જેથી
 require '../config/config.php';
 
 // 1. FETCH CURRICULUM
-// 1. FETCH CURRICULUM
 if (isset($_POST['fetch_curriculum'])) {
     $course_id = (int)$_POST['course_id'];
     $result = mysqli_query($conn, "SELECT * FROM units WHERE course_id = $course_id ORDER BY id ASC");
@@ -16,7 +15,7 @@ if (isset($_POST['fetch_curriculum'])) {
                     <i class="fas fa-folder me-2"></i><span id="unit-title-text-'.$unit['id'].'">'.htmlspecialchars($unit['unit_title']).'</span>
                 </h6>
                 <div class="d-flex gap-2">
-                    <button type="button" class="btn btn-sm btn-light border" title="Edit Unit" onclick="editUnitPrompt('.$unit['id'].', \''.addslashes($unit['unit_title']).'\')">
+                    <button type="button" class="btn btn-sm btn-light border" title="Edit Unit" onclick="editUnitPrompt('.$unit['id'].')">
                         <i class="fas fa-edit text-muted"></i>
                     </button>
                     <button type="button" class="btn btn-sm btn-light border" title="Delete Unit" onclick="deleteUnit('.$unit['id'].')">
@@ -35,10 +34,12 @@ if (isset($_POST['fetch_curriculum'])) {
             echo '<div class="lesson-item py-2 border-bottom d-flex justify-content-between align-items-center" style="font-size: 0.9rem;">
                 <div>
                     <i class="fas fa-play-circle text-primary me-2" onclick="previewContent(\''.addslashes($lesson['lesson_url']).'\', \''.$type_display.'\')" style="cursor:pointer"></i>
-                    <span>['.strtoupper($type_display).'] '.htmlspecialchars($lesson['lesson_title']).'</span>
+                    <span id="lesson-title-text-'.$lesson['id'].'">['.strtoupper($type_display).'] '.htmlspecialchars($lesson['lesson_title']).'</span>
+                    <input type="hidden" id="lesson-url-val-'.$lesson['id'].'" value="'.htmlspecialchars($lesson['lesson_url']).'">
+                    <input type="hidden" id="lesson-type-val-'.$lesson['id'].'" value="'.$type_display.'">
                 </div>
                 <div class="d-flex gap-2">
-                    <button type="button" class="btn btn-sm text-muted" title="Edit Lesson" onclick="editLessonPrompt('.$lesson['id'].', \''.addslashes($lesson['lesson_title']).'\', \''.$type_display.'\', \''.addslashes($lesson['lesson_url']).'\', '.$unit['id'].')">
+                    <button type="button" class="btn btn-sm text-muted" title="Edit Lesson" onclick="editLessonPrompt('.$lesson['id'].', '.$unit['id'].')">
                         <i class="fas fa-edit"></i>
                     </button>
                     <button type="button" class="btn btn-sm text-muted" title="Delete Lesson" onclick="deleteLesson('.$lesson['id'].')">
@@ -51,6 +52,7 @@ if (isset($_POST['fetch_curriculum'])) {
     }
     exit;
 }
+
 // 2. ADD UNIT
 if(isset($_POST['add_unit'])) {
     $course_id = (int)$_POST['course_id'];
@@ -64,7 +66,7 @@ if(isset($_POST['add_unit'])) {
                     <i class="fas fa-folder me-2"></i><span id="unit-title-text-'.$unit_id.'">'.htmlspecialchars($unit_title).'</span>
                 </h6>
                 <div class="d-flex gap-2">
-                    <button type="button" class="btn btn-sm btn-light border" onclick="editUnitPrompt('.$unit_id.', \''.addslashes($unit_title).'\')">
+                    <button type="button" class="btn btn-sm btn-light border" onclick="editUnitPrompt('.$unit_id.')">
                         <i class="fas fa-edit text-muted"></i>
                     </button>
                     <button type="button" class="btn btn-sm btn-outline-dark fw-bold" onclick="addLessonPrompt('.$unit_id.')">
@@ -131,11 +133,7 @@ if(isset($_POST['add_lesson']) || isset($_POST['update_lesson'])) {
 // 5. DELETE UNIT
 if (isset($_POST['delete_unit'])) {
     $unit_id = (int)$_POST['unit_id'];
-    
-    // Pela aa unit na badha lessons delete karva pade
     mysqli_query($conn, "DELETE FROM lessons WHERE unit_id = $unit_id");
-    
-    // Have unit delete karo
     $query = "DELETE FROM units WHERE id = $unit_id";
     if (mysqli_query($conn, $query)) {
         echo 'success';
@@ -148,7 +146,6 @@ if (isset($_POST['delete_unit'])) {
 // 6. DELETE LESSON
 if (isset($_POST['delete_lesson'])) {
     $lesson_id = (int)$_POST['lesson_id'];
-    
     $query = "DELETE FROM lessons WHERE id = $lesson_id";
     if (mysqli_query($conn, $query)) {
         echo 'success';

@@ -16,10 +16,16 @@ $user_q = mysqli_query($conn, "SELECT * FROM users WHERE id = '$user_id'");
 $user = mysqli_fetch_assoc($user_q);
 
 // Ketla courses ma enroll che te fetch karo
-$courses_q = mysqli_query($conn, "SELECT e.*, c.title, c.thumbnail, c.id as course_real_id 
-                                 FROM enrollments e 
-                                 JOIN courses c ON e.course_id = c.id 
-                                 WHERE e.student_id = '$user_id' 
+$courses_q = mysqli_query($conn, "SELECT e.*, c.title, c.thumbnail, c.id AS course_real_id, c.instructor_id,
+                                         u.name AS instructor_name,
+                                         COALESCE(NULLIF(p.profile_pic, ''), 'default-avatar.png') AS instructor_profile_pic,
+                                         COALESCE(NULLIF(p.bio, ''), 'No instructor bio available.') AS instructor_bio,
+                                         COALESCE(NULLIF(p.expertise, ''), 'Expertise not listed.') AS instructor_expertise
+                                 FROM enrollments e
+                                 JOIN courses c ON e.course_id = c.id
+                                 LEFT JOIN users u ON c.instructor_id = u.id
+                                 LEFT JOIN instructor_profiles p ON u.id = p.user_id
+                                 WHERE e.student_id = '$user_id'
                                  ORDER BY e.enrolled_at DESC");
 
 // Progress Function
@@ -129,6 +135,7 @@ function getCourseProgress($conn, $enrollment_id, $course_id) {
                     </div>
                     <div class="p-4 flex-grow-1 d-flex flex-column">
                         <h5 class="fw-bold text-dark mb-1 text-truncate"><?= $row['title'] ?></h5>
+                        <p class="mb-2"><small class="text-secondary"><a href="javascript:void(0)" class="text-primary text-decoration-none" onclick="openInstructorModal(this)" data-instructor-name="<?= htmlspecialchars($row['instructor_name']) ?>" data-instructor-bio="<?= htmlspecialchars($row['instructor_bio']) ?>" data-instructor-expertise="<?= htmlspecialchars($row['instructor_expertise']) ?>"><?= htmlspecialchars($row['instructor_name'] ?: 'Unknown Instructor') ?></a></small></p>
                         <p class="text-muted small mb-3">Enrolled on <?= date('d M, Y', strtotime($row['enrolled_at'])) ?></p>
                         
                         <div class="d-flex justify-content-between small fw-bold mb-1">
@@ -166,13 +173,44 @@ function getCourseProgress($conn, $enrollment_id, $course_id) {
     </div>
 </div>
 
+<!-- Instructor Quick Profile Modal -->
+<div class="modal fade" id="instructorModal" tabindex="-1" aria-labelledby="instructorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="instructorModalLabel">Instructor Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <h6 id="instructorModalName" class="fw-bold mb-3"></h6>
+                <p id="instructorModalExpertise" class="text-muted mb-2"></p>
+                <p id="instructorModalBio" class="small"></p>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
 <script>
     AOS.init({ duration: 1000, once: true });
+
+    function openInstructorModal(el) {
+        var name = el.getAttribute('data-instructor-name') || 'Unknown Instructor';
+        var bio = el.getAttribute('data-instructor-bio') || 'No instructor bio available.';
+        var expertise = el.getAttribute('data-instructor-expertise') || 'Expertise not listed.';
+
+        document.getElementById('instructorModalName').innerText = name;
+        document.getElementById('instructorModalBio').innerText = bio;
+        document.getElementById('instructorModalExpertise').innerText = expertise;
+
+        var modal = new bootstrap.Modal(document.getElementById('instructorModal'));
+        modal.show();
+    }
 
     function claimCertificate(courseId, courseTitle) {
         confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#4318ff', '#05cd99', '#ffbc00'] });

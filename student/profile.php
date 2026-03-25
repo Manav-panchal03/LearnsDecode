@@ -14,14 +14,49 @@ $error_msg = "";
 
 // Profile Update Logic
 if(isset($_POST['update_profile'])){
-    $name = mysqli_real_escape_string($conn, $_POST['name']);
-    $email = mysqli_real_escape_string($conn, $_POST['email']);
-    
-    $update = mysqli_query($conn, "UPDATE users SET name='$name', email='$email' WHERE id='$user_id'");
-    if($update){
-        $success_msg = "Profile updated successfully!";
+    $name = trim($_POST['name']);
+    $email = trim($_POST['email']);
+
+    if($name === '' || strlen($name) < 2){
+        $error_msg = 'Please enter a valid name (at least 2 characters).';
+    } elseif($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)){
+        $error_msg = 'Please enter a valid email address.';
     } else {
-        $error_msg = "Something went wrong!";
+        $name_safe = mysqli_real_escape_string($conn, $name);
+        $email_safe = mysqli_real_escape_string($conn, $email);
+
+        // Email uniqueness check among other users
+        $check_email = mysqli_query($conn, "SELECT id FROM users WHERE email = '$email_safe' AND id != '$user_id' LIMIT 1");
+        if(mysqli_num_rows($check_email) > 0){
+            $error_msg = 'This email is already used by another account.';
+        } else {
+            $update = mysqli_query($conn, "UPDATE users SET name='$name_safe', email='$email_safe' WHERE id='$user_id'");
+            if($update){
+                $success_msg = 'Profile updated successfully!';
+            } else {
+                $error_msg = 'Something went wrong while updating your profile. Please try again.';
+            }
+        }
+    }
+}
+
+// Password Change Logic
+if(isset($_POST['change_password'])){
+    $new_password = $_POST['new_password'] ?? '';
+    $confirm_password = $_POST['confirm_password'] ?? '';
+
+    if(strlen($new_password) < 8){
+        $error_msg = 'New password must be at least 8 characters long.';
+    } elseif($new_password !== $confirm_password){
+        $error_msg = 'New passwords do not match!';
+    } else {
+        $hashed = password_hash($new_password, PASSWORD_DEFAULT);
+        $update = mysqli_query($conn, "UPDATE users SET password='$hashed' WHERE id='$user_id'");
+        if($update){
+            $success_msg = 'Password changed successfully!';
+        } else {
+            $error_msg = 'Something went wrong while changing your password.';
+        }
     }
 }
 
@@ -104,6 +139,10 @@ $user = mysqli_fetch_assoc($user_q);
                     <div class="alert alert-success border-0 rounded-pill"><?= $success_msg ?></div>
                 <?php endif; ?>
 
+                <?php if($error_msg): ?>
+                    <div class="alert alert-danger border-0 rounded-pill"><?= $error_msg ?></div>
+                <?php endif; ?>
+
                 <form method="POST" class="text-start mt-4">
                     <div class="row g-3">
                         <div class="col-md-6">
@@ -128,7 +167,34 @@ $user = mysqli_fetch_assoc($user_q);
             </div>
         </div>
     </div>
-</div>
+
+    <div class="row justify-content-center mt-4">
+        <div class="col-lg-8" data-aos="zoom-in">
+            <div class="profile-card text-center">
+                <h5 class="fw-bold mb-3">Change Password</h5>
+                
+                <form method="POST" class="text-start">
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-muted">New Password</label>
+                            <input type="password" name="new_password" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-muted">Confirm New Password</label>
+                            <input type="password" name="confirm_password" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 text-center">
+                        <button type="submit" name="change_password" class="btn-update shadow-sm">
+                            Change Password
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
 <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -154,33 +220,61 @@ $user = mysqli_fetch_assoc($user_q);
                     type: 'POST',
                     data: { action: 'send_delete_otp' },
                     success: function(response) {
-                        showOtpDialog();
+                        showOtpDialog(response.trim());
                     }
                 });
             }
         })
     }
 
-    function showOtpDialog() {
+    function showOtpDialog(otp) {
+        let secondsLeft = 10;
+
         Swal.fire({
             title: 'Enter OTP',
-            text: 'We have generated an OTP for security. Enter it below to delete account.',
+            html: `
+                <div>Your OTP is: <b>${otp}</b></div>
+                <div id="otp-timer" style="margin-top:12px; font-weight:bold; color:#d9534f;">Time left: ${secondsLeft}s</div>
+            `,
             input: 'text',
             inputAttributes: { autocapitalize: 'off' },
             showCancelButton: true,
             confirmButtonText: 'Confirm Delete',
             confirmButtonColor: '#ff5b5b',
             showLoaderOnConfirm: true,
-            preConfirm: (otp) => {
+            didOpen: () => {
+                const interval = setInterval(() => {
+                    secondsLeft -= 1;
+                    const timerElement = document.getElementById('otp-timer');
+                    if (timerElement) {
+                        timerElement.textContent = `Time left: ${secondsLeft}s`;
+                    }
+
+                    if (secondsLeft <= 0) {
+                        clearInterval(interval);
+                        const swalConfirmBtn = Swal.getConfirmButton();
+                        if (swalConfirmBtn) swalConfirmBtn.disabled = true;
+                        if (timerElement) timerElement.textContent = 'OTP expired. Please request a new OTP.';
+                    }
+                }, 1000);
+                Swal.update({ didClose: () => clearInterval(interval) });
+            },
+            preConfirm: (enteredOtp) => {
+                if (secondsLeft <= 0) {
+                    Swal.showValidationMessage('OTP has expired. Please generate a new one.');
+                    return false;
+                }
                 return $.ajax({
                     url: 'auth_action.php',
                     type: 'POST',
-                    data: { action: 'verify_and_delete', otp: otp }
+                    data: { action: 'verify_and_delete', otp: enteredOtp }
                 }).then(response => {
-                    if (response.trim() === "success") {
+                    if (response.trim() === 'success') {
                         return true;
+                    } else if (response.trim() === 'expired') {
+                        Swal.showValidationMessage('OTP has expired. Please generate a new one.');
                     } else {
-                        Swal.showValidationMessage(`Invalid OTP!`);
+                        Swal.showValidationMessage('Invalid OTP!');
                     }
                 });
             }
@@ -189,7 +283,7 @@ $user = mysqli_fetch_assoc($user_q);
                 Swal.fire('Deleted!', 'Your account has been removed.', 'success')
                 .then(() => { window.location.href = '../login.php'; });
             }
-        })
+        });
     }
 </script>
 </body>
