@@ -47,6 +47,9 @@ $stats['revenue'] = [
     'instructor_share' => $total_potential * 0.70
 ];
 
+// Admin revenue by course
+$admin_revenue_details = mysqli_query($conn, "SELECT c.id, c.title, c.price, COUNT(e.id) AS enrollments, COALESCE(SUM(c.price), 0) AS total_revenue, COALESCE(SUM(c.price), 0)*0.30 AS admin_share FROM courses c LEFT JOIN enrollments e ON c.id = e.course_id GROUP BY c.id HAVING enrollments > 0 ORDER BY admin_share DESC");
+
 // Recent activity
 $stats['recent'] = [
     'new_users' => mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as count FROM users WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)"))['count'],
@@ -119,10 +122,14 @@ $quiz_attempts_list = mysqli_query($conn, "SELECT qa.id, qa.score, qa.attempted_
             </div>
         </div>
         <div class="col-md-3 animate__animated animate__zoomIn" style="animation-delay: 0.4s;">
-            <div class="card analytics-card p-3 shadow-sm">
+            <div class="card analytics-card p-3 shadow-sm rating-trigger" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#adminRevenueModal">
                 <div class="d-flex align-items-center">
                     <div class="stat-icon bg-info text-white me-3"><i class="fas fa-hand-holding-usd"></i></div>
-                    <div><h4 class="mb-0 fw-bold">₹<?php echo number_format($stats['revenue']['admin_share'], 2); ?></h4><small class="text-muted">Revenue (30% share)</small></div>
+                    <div>
+                        <h4 class="mb-0 fw-bold">₹<?php echo number_format($stats['revenue']['admin_share'], 2); ?></h4>
+                        <small class="text-muted">Revenue (30% share)</small>
+                        <div class="small text-primary">view course earnings</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -325,6 +332,52 @@ $quiz_attempts_list = mysqli_query($conn, "SELECT qa.id, qa.score, qa.attempted_
                                 <td><?php echo $att['attempted_at']; ?></td>
                             </tr>
                             <?php endwhile; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="adminRevenueModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content border-0 shadow-lg animate__animated animate__zoomIn" style="border-radius: 25px;">
+            <div class="modal-header border-0 p-4">
+                <div>
+                    <h5 class="fw-bold mb-1"><i class="fas fa-wallet text-info me-2"></i>Admin Earnings by Course</h5>
+                    <small class="text-muted">See how much the platform earns from each enrolled course.</small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4 pt-0">
+                <div class="table-responsive" style="max-height: 470px;">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Course</th>
+                                <th>Price</th>
+                                <th>Enrollments</th>
+                                <th>Total Revenue</th>
+                                <th>Admin Share</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if(mysqli_num_rows($admin_revenue_details) > 0): $courseIndex = 1; while($course = mysqli_fetch_assoc($admin_revenue_details)): ?>
+                            <tr class="animate__animated animate__fadeInUp">
+                                <td><?php echo $courseIndex++; ?></td>
+                                <td><?php echo htmlspecialchars($course['title']); ?></td>
+                                <td>₹<?php echo number_format($course['price'], 2); ?></td>
+                                <td><?php echo $course['enrollments']; ?></td>
+                                <td>₹<?php echo number_format($course['total_revenue'], 2); ?></td>
+                                <td>₹<?php echo number_format($course['admin_share'], 2); ?></td>
+                            </tr>
+                            <?php endwhile; else: ?>
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-5">No course revenue available yet.</td>
+                            </tr>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>

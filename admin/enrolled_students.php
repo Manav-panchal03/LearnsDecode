@@ -86,12 +86,50 @@ include 'includes/header.php';
         });
     }
 
-    function viewEnrollDetails(name, email, course, date, amount, txid, status) {
-        let statusColor = (status === 'completed') ? '#05cd99' : '#ffb800';
-        
-        let content = `
+    function viewEnrollDetails(card) {
+        const name = card.dataset.name;
+        const email = card.dataset.email;
+        const details = JSON.parse(card.dataset.details || '{}');
+        const courses = details.courses || [];
+        const dates = details.dates || [];
+        const amounts = details.amounts || [];
+        const txids = details.txids || [];
+        const statuses = details.statuses || [];
+
+        let courseRows = '';
+        let totalAmount = 0;
+        for (let i = 0; i < courses.length; i++) {
+            const status = statuses[i] || 'pending';
+            const amount = parseFloat(amounts[i] || 0);
+            const txid = txids[i] || '-';
+            const dateRaw = dates[i] || '';
+            const date = dateRaw ? new Date(dateRaw).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+            const statusBadge = (status === 'completed') ? 'bg-success text-dark' : 'bg-warning text-dark';
+            const statusColor = (status === 'completed') ? '#05cd99' : '#ffb800';
+
+            totalAmount += amount;
+            courseRows += `
+                <div class="p-3 rounded-3 mb-3" style="background: ${statusColor}15; border: 1px solid ${statusColor}22;">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <h6 class="fw-bold mb-1">${courses[i]}</h6>
+                            <small class="text-muted">Enrolled on ${date}</small>
+                        </div>
+                        <span class="badge ${statusBadge} text-uppercase">${status}</span>
+                    </div>
+                    <div class="d-flex justify-content-between small text-muted">
+                        <div>Amount: ₹${amount.toFixed(2)}</div>
+                        <div>TXID: ${txid}</div>
+                    </div>
+                </div>`;
+        }
+
+        const content = `
             <div class="modal-header bg-primary text-white p-4 border-0">
-                <h5 class="modal-title fw-bold"><i class="fas fa-info-circle me-2"></i> Enrollment Details</h5>
+                <div>
+                    <h5 class="modal-title fw-bold"><i class="fas fa-info-circle me-2"></i> Enrollment Summary</h5>
+                    <small class="text-muted">${courses.length} enrolled course${courses.length === 1 ? '' : 's'} for this student.</small>
+                </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4">
@@ -102,29 +140,19 @@ include 'includes/header.php';
                     <h4 class="fw-bold mb-0">${name}</h4>
                     <p class="text-muted small">${email}</p>
                 </div>
-                <div class="list-group list-group-flush border-top">
+                <div class="list-group list-group-flush border-top mb-4">
                     <div class="list-group-item d-flex justify-content-between py-3 border-0">
-                        <span class="text-muted">Enrolled In</span>
-                        <span class="fw-bold text-primary">${course}</span>
+                        <span class="text-muted">Total Courses</span>
+                        <span class="fw-bold text-primary">${courses.length}</span>
                     </div>
                     <div class="list-group-item d-flex justify-content-between py-3 border-0">
-                        <span class="text-muted">Date</span>
-                        <span class="fw-bold text-dark">${date}</span>
-                    </div>
-                    <div class="list-group-item d-flex justify-content-between py-3 border-0">
-                        <span class="text-muted">Amount Paid</span>
-                        <span class="fw-bold text-dark">₹${amount}</span>
-                    </div>
-                    <div class="list-group-item d-flex justify-content-between py-3 border-0">
-                        <span class="text-muted">Transaction ID</span>
-                        <span class="badge bg-light text-dark font-monospace">${txid}</span>
+                        <span class="text-muted">Total Amount</span>
+                        <span class="fw-bold text-dark">₹${totalAmount.toFixed(2)}</span>
                     </div>
                 </div>
-                <div class="mt-4 p-3 rounded-3 text-center" style="background: ${statusColor}15; color: ${statusColor}; border: 1px dashed ${statusColor}">
-                    <i class="fas fa-check-double me-2"></i> Payment Status: <strong>${status.toUpperCase()}</strong>
-                </div>
-            </div>
-        `;
+                ${courseRows}
+            </div>`;
+
         $('#modalData').html(content);
         new bootstrap.Modal(document.getElementById('enrollDetailModal')).show();
     }

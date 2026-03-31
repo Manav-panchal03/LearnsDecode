@@ -1,26 +1,42 @@
 <?php
 require 'config/config.php';
 
-if(isset($_POST['register'])){
-    $name = mysqli_real_escape_string($conn, $_POST['name']);
-    $email = mysqli_real_escape_string($conn, $_POST['email']);
-    $raw_password = $_POST['password'];
-    $role = $_POST['role'];
+function redirect_with_alert($message, $location = 'register.php') {
+    echo "<script>
+            alert('" . addslashes($message) . "');
+            window.location='" . $location . "';
+          </script>";
+    exit();
+}
 
-    // --- PRO-TIP: STRONG PASSWORD REGEX ---
-    // Explaining the Regex:
-    // (?=.*[A-Z]) -> At least one uppercase
-    // (?=.*[0-9]) -> At least one number
-    // (?=.*[!@#$%^&*]) -> At least one special char
-    // {8,} -> Minimum 8 characters
-    $password_regex = "/^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{8,})/";
-    if(!preg_match($password_regex, $raw_password)){
-        echo "<script>
-                alert('Password selection criteria: \\n- Min 8 characters \\n- One Uppercase letter \\n- One Number \\n- One Special Character'); 
-                window.history.back();
-            </script>";
-        exit();
+if(isset($_POST['register'])){
+    $name = trim(mysqli_real_escape_string($conn, $_POST['name'] ?? ''));
+    $email = trim(mysqli_real_escape_string($conn, $_POST['email'] ?? ''));
+    $raw_password = $_POST['password'] ?? '';
+    $role = $_POST['role'] ?? 'student';
+
+    if($name === '' || $email === '' || $raw_password === '') {
+        redirect_with_alert('Please fill in all required fields.');
     }
+
+    if(!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        redirect_with_alert('Please enter a valid email address.');
+    }
+
+    $allowed_roles = ['student', 'instructor'];
+    if(!in_array($role, $allowed_roles, true)) {
+        $role = 'student';
+    }
+
+    $password_regex = '/^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/';
+    if(!preg_match($password_regex, $raw_password)){
+        redirect_with_alert('Password must be at least 8 characters long and include one uppercase letter, one number, and one special character.');
+    }
+
+    if(strlen($raw_password) > 72) {
+        redirect_with_alert('Password must not exceed 72 characters.');
+    }
+
     $password = password_hash($raw_password, PASSWORD_BCRYPT);// Secure hashing
     
     // Check if email already exists

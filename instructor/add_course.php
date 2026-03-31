@@ -48,10 +48,13 @@ if($edit_id) {
         #imagePreview { width: 100%; height: 180px; border: 2px dashed #cbd5e0; border-radius: 15px; display: flex; align-items: center; justify-content: center; background: #f8fafc; cursor: pointer; overflow: hidden; }
         #imagePreview img { width: 100%; height: 100%; object-fit: cover; }
         .unit-box { background: #fff; border: 1px solid #e2e8f0; border-radius: 15px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+        .quick-dashboard-btn { position: fixed; bottom: 24px; right: 24px; z-index: 1100; border-radius: 999px; padding: 0.85rem 1.25rem; background: #fff; color: #1f2937; border: 1px solid #e2e8f0; box-shadow: 0 14px 30px rgba(15,23,42,0.12); transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .quick-dashboard-btn:hover { transform: translateY(-2px); text-decoration: none; box-shadow: 0 20px 36px rgba(15,23,42,0.18); }
     </style>
 </head>
 <body>
 
+<a href="dashboard.php" class="quick-dashboard-btn"><i class="fas fa-arrow-left me-2"></i>Back to Dashboard</a>
 <div class="container setup-container">
     <div class="card">
         <div class="row g-0">
